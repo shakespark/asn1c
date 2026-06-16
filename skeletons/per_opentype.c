@@ -295,7 +295,17 @@ uper_sot_suck(const asn_codec_ctx_t *ctx, const asn_TYPE_descriptor_t *td,
 	(void)constraints;
 	(void)sptr;
 
-	while(per_get_few_bits(pd, 24) >= 0);
+	/*
+	 * Consume (skip) the open type content of an unrecognized extension.
+	 * The content is always an integral number of octets (X.691), so step
+	 * 8 bits at a time. per_get_few_bits() has all-or-nothing semantics:
+	 * a 24-bit step reads nothing once fewer than 24 bits remain, so any
+	 * open type whose length is not a multiple of 3 octets is under-read,
+	 * leaving residual bits that derail decoding of the following fields
+	 * (e.g. a 1-octet extension fails with "Too large padding").
+	 * The step MUST stay a divisor of 8.
+	 */
+	while(per_get_few_bits(pd, 8) >= 0);
 
 	rv.code = RC_OK;
 	rv.consumed = pd->moved;
