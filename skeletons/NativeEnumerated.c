@@ -132,8 +132,21 @@ NativeEnumerated_decode_uper(const asn_codec_ctx_t *opt_codec_ctx,
 		value = uper_get_nsnnwn(pd);
 		if(value < 0) ASN__DECODE_STARVED;
 		value += specs->extension - 1;
-		if(value >= specs->map_count)
-			ASN__DECODE_FAILED;
+		if(value >= specs->map_count) {
+			/*
+			 * Unknown extension value: the peer used an enumeration value
+			 * added in a newer version of the type. An extension value is
+			 * just the index (there is no open type to skip) and it has
+			 * already been consumed, so accept it instead of failing -- an
+			 * enclosing type can then keep decoding its following fields
+			 * (forward compatibility). Store the extension ordinal, which
+			 * is >= map_count and therefore distinguishable from every
+			 * known value. Such an unknown value cannot be re-encoded.
+			 */
+			*native = value;
+			ASN_DEBUG("Decoded %s = unknown extension %ld", td->name, value);
+			return rval;
+		}
 	}
 
 	*native = specs->value2enum[value].nat_value;
