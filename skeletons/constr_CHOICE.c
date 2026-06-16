@@ -882,8 +882,22 @@ CHOICE_decode_uper(const asn_codec_ctx_t *opt_codec_ctx,
 		value = uper_get_nsnnwn(pd);
 		if(value < 0) ASN__DECODE_STARVED;
 		value += specs->ext_start;
-		if((unsigned)value >= td->elements_count)
-			ASN__DECODE_FAILED;
+		if((unsigned)value >= td->elements_count) {
+			/*
+			 * Unknown extension alternative: the peer selected a CHOICE
+			 * alternative added in a newer version of the type. X.691
+			 * wraps that value in an open type; skip it and present the
+			 * CHOICE as an absent selection so that an enclosing type can
+			 * keep decoding its following fields, instead of failing the
+			 * whole message (forward compatibility).
+			 */
+			if(uper_open_type_skip(opt_codec_ctx, pd))
+				ASN__DECODE_STARVED;
+			_set_present_idx(st, specs->pres_offset, specs->pres_size, 0);
+			rv.code = RC_OK;
+			rv.consumed = 0;
+			return rv;
+		}
 	}
 
 	/* Adjust if canonical order is different from natural order */
