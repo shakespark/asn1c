@@ -136,15 +136,24 @@ NativeEnumerated_decode_uper(const asn_codec_ctx_t *opt_codec_ctx,
 			/*
 			 * Unknown extension value: the peer used an enumeration value
 			 * added in a newer version of the type. An extension value is
-			 * just the index (there is no open type to skip) and it has
+			 * just an index (there is no open type to skip) and it has
 			 * already been consumed, so accept it instead of failing -- an
 			 * enclosing type can then keep decoding its following fields
-			 * (forward compatibility). Store the extension ordinal, which
-			 * is >= map_count and therefore distinguishable from every
-			 * known value. Such an unknown value cannot be re-encoded.
+			 * (forward compatibility).
+			 *
+			 * A plain long has no in-band way to say "unknown", so store a
+			 * value guaranteed to differ from every value known to this
+			 * (older) decoder: one past the largest known enumeration value.
+			 * value2enum is sorted by nat_value, so its last entry holds the
+			 * maximum. This cannot collide with a known value -- the ordinal
+			 * itself could, because enumeration values may be sparse, e.g.
+			 * { a(0), b(2), ... } where an unknown ordinal of 2 would alias
+			 * b(2) -- and it is absent from value2enum, so re-encoding fails
+			 * cleanly: an unknown extension value is decode-only.
 			 */
-			*native = value;
-			ASN_DEBUG("Decoded %s = unknown extension %ld", td->name, value);
+			*native = specs->value2enum[specs->map_count - 1].nat_value + 1;
+			ASN_DEBUG("Decoded %s = unknown extension (ordinal %ld)",
+				td->name, value);
 			return rval;
 		}
 	}
