@@ -890,6 +890,32 @@ CHOICE_decode_uper(const asn_codec_ctx_t *opt_codec_ctx,
 			 * CHOICE as an absent selection so that an enclosing type can
 			 * keep decoding its following fields, instead of failing the
 			 * whole message (forward compatibility).
+			 *
+			 * Application-visible contract of this recovery: present==0 is
+			 * overloaded to mean both "no alternative selected" and "an
+			 * unknown extension alternative was received and skipped". The
+			 * forward-compatibility guarantee ends at decoding -- the
+			 * message decodes successfully and every field surrounding this
+			 * CHOICE is recovered, but the unknown alternative's contents
+			 * are discarded. Consequently any whole-message operation that
+			 * must revisit this CHOICE fails cleanly (never crashes) while
+			 * present==0:
+			 *   - asn_check_constraints() reports "no CHOICE element given"
+			 *     (see the else branch of CHOICE_constraint() below);
+			 *   - xer_fprint() / XER encoding of the enclosing value fails;
+			 *   - DER and UPER re-encoding fail (an absent selection is not
+			 *     encodable).
+			 * This is by design and matches the reference toolchain and asn1tools, which
+			 * likewise cannot re-encode an alternative they do not know: a
+			 * relaying application must carry the original octets rather
+			 * than decode-then-re-encode through this type.
+			 *
+			 * The skip's failure is reported conservatively as STARVED
+			 * (RC_WMORE): uper_open_type_skip() collapses every failure to
+			 * -1, and in this path the only non-starvation failure would be
+			 * an out-of-memory REALLOC deep inside uper_open_type_get(),
+			 * where the whole decode is aborting anyway (see the note in
+			 * uper_open_type_skip(), per_opentype.c).
 			 */
 			if(uper_open_type_skip(opt_codec_ctx, pd))
 				ASN__DECODE_STARVED;
