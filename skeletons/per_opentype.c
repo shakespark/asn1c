@@ -274,6 +274,20 @@ uper_open_type_skip(const asn_codec_ctx_t *ctx, asn_per_data_t *pd) {
     s_op.uper_decoder = uper_sot_suck;
 
 	rv = uper_open_type_get(ctx, &s_td, 0, 0, pd);
+	/*
+	 * The rich rval code is collapsed to a boolean here, so callers
+	 * (constr_SEQUENCE.c, constr_CHOICE.c) uniformly map any failure to
+	 * ASN__DECODE_STARVED (RC_WMORE). uper_open_type_get() can in principle
+	 * report RC_FAIL as well -- for the skip use case only via an
+	 * out-of-memory REALLOC in uper_open_type_get_simple(), since the
+	 * uper_sot_suck() decoder itself never fails and an integral-octet open
+	 * type leaves no non-zero padding. Distinguishing that one case would
+	 * require widening this public API's return contract and updating both
+	 * callers, for a state (OOM mid-decode) where the whole decode is
+	 * already aborting and reporting "want more data" is imprecise but
+	 * harmless: the buffer is not advanced and no caller recovers by
+	 * retrying. The conservative STARVED mapping is therefore retained.
+	 */
 	if(rv.code != RC_OK)
 		return -1;
 	else
