@@ -2205,7 +2205,7 @@ emit_member_PER_constraints(arg_t *arg, asn1p_expr_t *expr, const char *pfx) {
 	} else if(etype & ASN_STRING_KM_MASK) {
 		range = asn1constraint_compute_PER_range(expr->Identifier, etype,
 				expr->combined_constraints, ACT_CT_FROM,
-				0, 0, 0);
+				0, 0, CPR_ignore_extension_additions);
 		DEBUG("Emitting FROM constraint for %s", expr->Identifier);
 
 		if((range->left.type == ARE_MIN && range->right.type == ARE_MAX)
@@ -2235,7 +2235,7 @@ emit_member_PER_constraints(arg_t *arg, asn1p_expr_t *expr, const char *pfx) {
 	} else {
 		range = asn1constraint_compute_PER_range(expr->Identifier, etype,
 				expr->combined_constraints, ACT_EL_RANGE,
-				0, 0, 0);
+				0, 0, CPR_ignore_extension_additions);
 		if(emit_single_member_PER_constraint(arg, range, 0, 0))
 			return -1;
 		asn1constraint_range_free(range);
@@ -2243,7 +2243,8 @@ emit_member_PER_constraints(arg_t *arg, asn1p_expr_t *expr, const char *pfx) {
 	OUT(",\n");
 
 	range = asn1constraint_compute_PER_range(expr->Identifier, etype,
-			expr->combined_constraints, ACT_CT_SIZE, 0, 0, 0);
+			expr->combined_constraints, ACT_CT_SIZE, 0, 0,
+			CPR_ignore_extension_additions);
 	if(emit_single_member_PER_constraint(arg, range, 0, "SIZE"))
 		return -1;
 	asn1constraint_range_free(range);

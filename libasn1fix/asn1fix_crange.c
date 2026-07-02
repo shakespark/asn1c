@@ -1241,16 +1241,23 @@ asn1constraint_compute_constraint_range(
 				continue;
 			}
 
-			if(past_ext) {
+			if(past_ext && (cpr_flags & CPR_ignore_extension_additions)) {
 				/*
 				 * Elements following the "..." extension marker are
 				 * extension additions (e.g. the "3" in SIZE(2,...,3)).
-				 * They are not part of the PER-visible root range and
-				 * must not widen it: in PER an extension value is encoded
-				 * with a general length determinant, independent of which
-				 * extension sizes the version happens to name. Folding them
-				 * into the root produced encodings incompatible with the
-				 * standard and corrupted cross-version decoding.
+				 * When the caller asked to compute the PER-visible root
+				 * range (CPR_ignore_extension_additions), they must not
+				 * widen it: in PER an extension value is encoded with a
+				 * general length determinant, independent of which
+				 * extension sizes the version happens to name. Folding
+				 * them into the root produced encodings incompatible with
+				 * the standard and corrupted cross-version decoding.
+				 *
+				 * Every other caller (notably the generated
+				 * asn_check_constraints checker, which has no ellipsis
+				 * escape and compares against the returned root) keeps the
+				 * additions folded in, so that a value in the named
+				 * extension range still satisfies the constraint.
 				 */
 				range->extensible = 1;
 				_range_free(tmp);
