@@ -29,6 +29,9 @@
 #include <M.h>
 #include <S2.h>
 #include <S3.h>
+#include <S4.h>
+#include <EmptyOD.h>
+#include <ObjectDescriptor.h>
 
 static void
 check_M_roundtrip(void) {
@@ -242,10 +245,154 @@ check_S3_presence_and_default(void) {
 	}
 }
 
+static void
+check_S4_untagged_choice_order(void) {
+	/*
+	 * S4 ::= SET { n [5] INTEGER(0..255), c CH } with CH an untagged
+	 * CHOICE { x [3] ..., y [4] ... }. The tag map carries one entry
+	 * per possible CHOICE tag ([3]->c, [4]->c, [5]->n), so the
+	 * canonical-order reconstruction must de-duplicate and sort c by
+	 * its smallest tag: c is transmitted first although n is
+	 * declared first. Golden bytes from the reference toolchain.
+	 */
+	unsigned char buf[8];
+	asn_enc_rval_t er;
+	asn_dec_rval_t rv;
+
+	/*
+	 * { n 7, c x:1 }: c = CHOICE index 0 (1 bit) + x (8 bits),
+	 * n = 00000111; 0 00000001 00000111 (17 bits) -> 00 83 80.
+	 */
+	{
+		static const unsigned char enc[] = { 0x00, 0x83, 0x80 };
+		S4_t *s4 = 0;
+		S4_t src;
+
+		memset(&src, 0, sizeof(src));
+		src.n = 7;
+		src.c.present = CH_PR_x;
+		src.c.choice.x = 1;
+		er = uper_encode_to_buffer(&asn_DEF_S4, 0, &src, buf, sizeof buf);
+		assert(er.encoded == 17);
+		assert(buf[0] == 0x00 && buf[1] == 0x83 && buf[2] == 0x80);
+
+		rv = uper_decode(0, &asn_DEF_S4, (void **)&s4, enc, sizeof enc,
+				 0, 0);
+		assert(rv.code == RC_OK);
+		assert(s4->n == 7);
+		assert(s4->c.present == CH_PR_x);
+		assert(s4->c.choice.x == 1);
+		ASN_STRUCT_FREE(asn_DEF_S4, s4);
+	}
+
+	/*
+	 * { n 7, c y:TRUE }: c = CHOICE index 1 (1 bit) + y (1 bit),
+	 * n = 00000111; 1 1 00000111 (10 bits) -> c1 c0.
+	 */
+	{
+		static const unsigned char enc[] = { 0xc1, 0xc0 };
+		S4_t *s4 = 0;
+		S4_t src;
+
+		memset(&src, 0, sizeof(src));
+		src.n = 7;
+		src.c.present = CH_PR_y;
+		src.c.choice.y = 1;
+		er = uper_encode_to_buffer(&asn_DEF_S4, 0, &src, buf, sizeof buf);
+		assert(er.encoded == 10);
+		assert(buf[0] == 0xc1 && buf[1] == 0xc0);
+
+		rv = uper_decode(0, &asn_DEF_S4, (void **)&s4, enc, sizeof enc,
+				 0, 0);
+		assert(rv.code == RC_OK);
+		assert(s4->n == 7);
+		assert(s4->c.present == CH_PR_y);
+		assert(s4->c.choice.y != 0);
+		ASN_STRUCT_FREE(asn_DEF_S4, s4);
+	}
+}
+
+static void
+check_EmptyOD_null_codec_gating(void) {
+	/*
+	 * Regression: the null-codec guard in SET_OF_decode_uper()
+	 * (shared by SEQUENCE OF via SEQUENCE_OF_decode_uper) must only
+	 * fire when there is at least one element to decode. An empty
+	 * collection never invokes the element codec, so it must decode
+	 * and encode fine (a single zero length determinant, 00) even if
+	 * the element type has no UPER codec; only a non-empty one must
+	 * fail cleanly.
+	 *
+	 * Since every generated type now has a UPER codec, the
+	 * codec-less element is simulated by pointing the element type's
+	 * operation table at a copy with the UPER slots nulled -- which
+	 * is exactly the situation a SET member used to be in before the
+	 * SET UPER codec existed.
+	 */
+	asn_TYPE_operation_t op_no_uper;
+	asn_TYPE_operation_t *saved_op = asn_DEF_ObjectDescriptor.op;
+	unsigned char buf[8];
+	asn_enc_rval_t er;
+	asn_dec_rval_t rv;
+
+	op_no_uper = *asn_DEF_ObjectDescriptor.op;
+	op_no_uper.uper_decoder = 0;
+	op_no_uper.uper_encoder = 0;
+	asn_DEF_ObjectDescriptor.op = &op_no_uper;
+
+	/* Empty: decode 00 -> RC_OK with zero elements. */
+	{
+		static const unsigned char enc[] = { 0x00 };
+		EmptyOD_t *e = 0;
+
+		rv = uper_decode(0, &asn_DEF_EmptyOD, (void **)&e, enc,
+				 sizeof enc, 0, 0);
+		assert(rv.code == RC_OK);
+		assert(e->list.count == 0);
+
+		/* Empty encode must succeed as well. */
+		er = uper_encode_to_buffer(&asn_DEF_EmptyOD, 0, e, buf,
+					   sizeof buf);
+		assert(er.encoded == 8);
+		assert(buf[0] == 0x00);
+		ASN_STRUCT_FREE(asn_DEF_EmptyOD, e);
+	}
+
+	/* Non-empty: must fail cleanly (RC_FAIL), not crash. */
+	{
+		static const unsigned char enc[] = { 0x01, 0x00 };
+		EmptyOD_t *e = 0;
+
+		rv = uper_decode(0, &asn_DEF_EmptyOD, (void **)&e, enc,
+				 sizeof enc, 0, 0);
+		assert(rv.code != RC_OK);
+		if(e) ASN_STRUCT_FREE(asn_DEF_EmptyOD, e);
+	}
+
+	asn_DEF_ObjectDescriptor.op = saved_op;
+
+	/*
+	 * With the real ObjectDescriptor codec back in place, an empty
+	 * round-trip must (still) work.
+	 */
+	{
+		static const unsigned char enc[] = { 0x00 };
+		EmptyOD_t *e = 0;
+
+		rv = uper_decode(0, &asn_DEF_EmptyOD, (void **)&e, enc,
+				 sizeof enc, 0, 0);
+		assert(rv.code == RC_OK);
+		assert(e->list.count == 0);
+		ASN_STRUCT_FREE(asn_DEF_EmptyOD, e);
+	}
+}
+
 int main() {
 	check_M_roundtrip();
 	check_S2_canonical_order();
 	check_S3_presence_and_default();
+	check_S4_untagged_choice_order();
+	check_EmptyOD_null_codec_gating();
 
 	printf("Finished OK\n");
 	return 0;

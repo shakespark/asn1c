@@ -930,12 +930,6 @@ SET_OF_decode_uper(const asn_codec_ctx_t *opt_codec_ctx,
 	}
 	list = _A_SET_FROM_VOID(st);
 
-	if(!elm->type->op->uper_decoder) {
-		ASN_DEBUG("Element type %s of %s has no UPER decoder",
-			elm->type->name, td->name);
-		ASN__DECODE_FAILED;
-	}
-
 	/* Figure out which constraints to use */
 	if(constraints) ct = &constraints->size;
 	else if(td->encoding_constraints.per_constraints)
@@ -966,6 +960,12 @@ SET_OF_decode_uper(const asn_codec_ctx_t *opt_codec_ctx,
             ASN_DEBUG("Got to decode %" ASN_PRI_SSIZE " elements (eff %d)",
                       nelems, (int)(ct ? ct->effective_bits : -1));
             if(nelems < 0) ASN__DECODE_STARVED;
+		}
+
+		if(nelems > 0 && !elm->type->op->uper_decoder) {
+			ASN_DEBUG("Element type %s of %s has no UPER decoder",
+				elm->type->name, td->name);
+			ASN__DECODE_FAILED;
 		}
 
 		for(i = 0; i < nelems; i++) {
