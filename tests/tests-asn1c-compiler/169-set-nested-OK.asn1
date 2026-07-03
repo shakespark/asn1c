@@ -1,0 +1,35 @@
+-- OK: Everything is fine
+
+-- iso.org.dod.internet.private.enterprise (1.3.6.1.4.1)
+-- .spelio.software.asn1c.test (9363.1.5.1)
+-- .169
+
+-- asn1c has no PER/OER codec implementation for the SET type
+-- (skeletons/constr_SET.c's asn_OP_SET leaves uper_decoder, uper_encoder,
+-- oer_decoder and oer_encoder as null function pointers). A SET used at
+-- the outermost PDU level is already guarded (per_decoder.c checks
+-- td->op->uper_decoder before calling it), but a SET nested as a member
+-- of an enclosing SEQUENCE (or CHOICE, or *_OF) was not: the member-level
+-- call sites invoked the null function pointer directly, causing a
+-- SIGSEGV instead of a clean decode/encode failure (issue #12).
+--
+-- This module reproduces the minimal nested case: M is a SEQUENCE whose
+-- single member s is of type S, a SET. Decoding or encoding M in UPER
+-- (or OER) must fail cleanly (RC_FAIL / encoded == -1) rather than crash.
+
+ModuleSetNested
+	{ iso org(3) dod(6) internet (1) private(4) enterprise(1)
+		spelio(9363) software(1) asn1c(5) test(1) 169 }
+	DEFINITIONS AUTOMATIC TAGS ::=
+BEGIN
+
+	M ::= SEQUENCE {
+		s S
+	}
+
+	S ::= SET {
+		a INTEGER(0..255),
+		b BOOLEAN
+	}
+
+END
