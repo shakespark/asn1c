@@ -2846,7 +2846,9 @@ emit_member_table(arg_t *arg, asn1p_expr_t *expr, asn1c_ioc_table_and_objset_t *
 			&& expr->expr_type == ASN_BASIC_INTEGER
 			&& expr_elements_count(arg, expr))
 		|| (expr->expr_type == ASN_BASIC_INTEGER
-			&& asn1c_type_fits_long(arg, expr) == FL_FITS_UNSIGN);
+			&& asn1c_type_fits_long(arg, expr) == FL_FITS_UNSIGN)
+		|| (expr->expr_type == ASN_BASIC_BIT_STRING
+			&& expr_elements_count(arg, expr));
 	if(C99_MODE) OUT(".type = ");
 
     OUT("&asn_DEF_");
@@ -3157,7 +3159,9 @@ emit_type_DEF(arg_t *arg, asn1p_expr_t *expr, enum tvm_compat tv_mode, int tags_
 				((terminal->expr_type & ASN_CONSTR_MASK) ||
 				(terminal->expr_type == ASN_BASIC_ENUMERATED) ||
 				((terminal->expr_type == ASN_BASIC_INTEGER) &&
-				(asn1c_type_fits_long(arg, terminal) == FL_FITS_UNSIGN)))) {
+				(asn1c_type_fits_long(arg, terminal) == FL_FITS_UNSIGN)) ||
+				((terminal->expr_type == ASN_BASIC_BIT_STRING) &&
+				expr_elements_count(arg, terminal)))) {
                 OUT("&asn_SPC_%s_specs_%d\t/* Additional specs */\n",
                     c_expr_name(arg, terminal).part_name,
                     terminal->_type_unique_index);
