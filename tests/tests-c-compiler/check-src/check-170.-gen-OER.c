@@ -98,8 +98,9 @@ static const uint8_t v1_mc[] = { 0x01, 0x80, 0x07, 0x04 };
  * spread between nested stack frames; under ASan's fake-stack frame
  * allocation that spread can spuriously exceed ASN__DEFAULT_STACK_MAX
  * (30000) after only a couple of calls. Passing a codec context with
- * max_stack_size == 0 disables the check, matching how other ASan-built
- * check-src drivers in this test suite avoid the same false positive.
+ * max_stack_size == 0 disables the check entirely (per its own guard),
+ * so the assertions below test the codec logic rather than the
+ * environment-dependent stack estimate.
  */
 static asn_codec_ctx_t s_no_stack_limit; /* zero-initialized */
 
@@ -171,6 +172,10 @@ check_seq_truncated(void) {
         fprintf(stderr, "SEQ truncated at %zu: code=%d consumed=%zu\n",
                 cut, dr.code, dr.consumed);
         assert(dr.code == RC_WMORE);
+        /* The SEQUENCE decoder reports partial progress on RC_WMORE
+         * (its saved context supports resuming mid-PDU), but it must
+         * never claim to have consumed more than it was given. */
+        assert(dr.consumed <= cut);
 
         ASN_STRUCT_FREE(asn_DEF_M, m);
         free(buf);
@@ -237,6 +242,10 @@ check_choice_truncated(void) {
         fprintf(stderr, "CHOICE truncated at %zu: code=%d consumed=%zu\n",
                 cut, dr.code, dr.consumed);
         assert(dr.code == RC_WMORE);
+        /* The unknown-alternative skip path must not consume anything
+         * (not even the tag) before the whole Open Type is available:
+         * a retry re-parses the tag from scratch. */
+        assert(dr.consumed == 0);
 
         ASN_STRUCT_FREE(asn_DEF_C, c);
         free(buf);
