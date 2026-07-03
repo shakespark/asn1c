@@ -67,6 +67,22 @@ static const uint8_t v3_seq[] = {
 };
 
 /*
+ * v2 encoding of C: c2 5 (extracted from the OSS-encoded MC below;
+ * a lone CHOICE PDU is encoded identically):
+ *   81           tag [1] (context class, automatic tag of c2)
+ *   01 05        open type: length 1, contents c2 = 5
+ */
+static const uint8_t v2_choice[] = { 0x81, 0x01, 0x05 };
+
+/*
+ * v2 encoding of MC {pre 1, c c2 : 5, post 4}:
+ *   01           pre = 1
+ *   81 01 05     c (see v2_choice above)
+ *   04           post = 4
+ */
+static const uint8_t v2_mc[] = { 0x01, 0x81, 0x01, 0x05, 0x04 };
+
+/*
  * v1 encodings (root alternatives only), as emitted by OSS v12.0 from
  * the very same v1 module this test is compiled from; pins down the
  * encode-side interoperability so OSS can decode what asn1c emits.
@@ -78,12 +94,20 @@ static const uint8_t v1_seq[] = { 0x01, 0x00, 0x02, 0x04 };
 static const uint8_t v1_mc[] = { 0x01, 0x80, 0x07, 0x04 };
 
 /*
- * Zero max_stack_size disables the stack-depth checker: sanitizer builds
- * (ASAN/UBSAN) inflate stack frames enough to trip the default limit,
- * which would mask the codec behavior under test with an unrelated
- * RC_FAIL.
+ * ASN__STACK_OVERFLOW_CHECK() estimates stack depth from the address
+ * spread between nested stack frames; under ASan's fake-stack frame
+ * allocation that spread can spuriously exceed ASN__DEFAULT_STACK_MAX
+ * (30000) after only a couple of calls. Passing a codec context with
+ * max_stack_size == 0 disables the check, matching how other ASan-built
+ * check-src drivers in this test suite avoid the same false positive.
  */
 static asn_codec_ctx_t s_no_stack_limit; /* zero-initialized */
+
+static int
+consume_bytes_dropper(const void *data, size_t size, void *app_key) {
+    (void)data; (void)size; (void)app_key;
+    return 0;
+}
 
 /* Unknown SEQUENCE extension addition is skipped; b is not shifted. */
 static void
@@ -153,6 +177,72 @@ check_seq_truncated(void) {
     }
 }
 
+/* Unknown CHOICE extension alternative: RC_OK, nothing selected. */
+static void
+check_choice_skip(void) {
+    C_t *c = 0;
+    asn_enc_rval_t er;
+    asn_dec_rval_t dr =
+        oer_decode(&s_no_stack_limit, &asn_DEF_C, (void **)&c, v2_choice, sizeof(v2_choice));
+
+    fprintf(stderr, "CHOICE skip: code=%d consumed=%zu\n",
+            dr.code, dr.consumed);
+    assert(dr.code == RC_OK);  /* Unfixed #15 returns RC_FAIL */
+    fprintf(stderr, "CHOICE skip: present=%d\n", (int)c->present);
+    assert(dr.consumed == sizeof(v2_choice));
+    assert(c->present == C_PR_NOTHING);
+
+    /* Re-encoding an unknown alternative is unsupported and must fail
+     * cleanly (no crash, no bytes emitted as if it were valid). */
+    er = oer_encode(&asn_DEF_C, c, consume_bytes_dropper, 0);
+    fprintf(stderr, "CHOICE re-encode: encoded=%zd\n", er.encoded);
+    assert(er.encoded == -1);
+
+    ASN_STRUCT_FREE(asn_DEF_C, c);
+}
+
+/* Fields following an unknown CHOICE alternative are still recovered. */
+static void
+check_choice_skip_nested(void) {
+    MC_t *mc = 0;
+    asn_dec_rval_t dr =
+        oer_decode(&s_no_stack_limit, &asn_DEF_MC, (void **)&mc, v2_mc, sizeof(v2_mc));
+
+    fprintf(stderr, "MC skip: code=%d consumed=%zu\n", dr.code, dr.consumed);
+    assert(dr.code == RC_OK);
+    fprintf(stderr, "MC skip: pre=%ld present=%d post=%ld\n",
+            mc->pre, (int)mc->c.present, mc->post);
+    assert(dr.consumed == sizeof(v2_mc));
+    assert(mc->pre == 1);
+    assert(mc->c.present == C_PR_NOTHING);
+    assert(mc->post == 4);
+
+    ASN_STRUCT_FREE(asn_DEF_MC, mc);
+}
+
+/* CHOICE truncated inside the open type contents must starve cleanly. */
+static void
+check_choice_truncated(void) {
+    size_t cut;
+
+    for(cut = 1; cut < sizeof(v2_choice); cut++) {
+        uint8_t *buf = malloc(cut);
+        C_t *c = 0;
+        asn_dec_rval_t dr;
+
+        assert(buf);
+        memcpy(buf, v2_choice, cut);
+        dr = oer_decode(&s_no_stack_limit, &asn_DEF_C, (void **)&c, buf, cut);
+
+        fprintf(stderr, "CHOICE truncated at %zu: code=%d consumed=%zu\n",
+                cut, dr.code, dr.consumed);
+        assert(dr.code == RC_WMORE);
+
+        ASN_STRUCT_FREE(asn_DEF_C, c);
+        free(buf);
+    }
+}
+
 /*
  * Encode-side interop: asn1c's v1 encodings must be byte-identical to
  * the OSS v1 encodings (OSS decodes both back to the same values).
@@ -190,6 +280,9 @@ int main() {
     check_seq_skip();
     check_seq_skip_two_extensions();
     check_seq_truncated();
+    check_choice_skip();
+    check_choice_skip_nested();
+    check_choice_truncated();
     check_v1_encode_interop();
     return 0;
 }
