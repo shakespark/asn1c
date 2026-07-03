@@ -4,18 +4,21 @@
 -- .spelio.software.asn1c.test (9363.1.5.1)
 -- .169
 
--- asn1c has no PER/OER codec implementation for the SET type
--- (skeletons/constr_SET.c's asn_OP_SET leaves uper_decoder, uper_encoder,
--- oer_decoder and oer_encoder as null function pointers). A SET used at
--- the outermost PDU level is already guarded (per_decoder.c checks
--- td->op->uper_decoder before calling it), but a SET nested as a member
--- of an enclosing SEQUENCE (or CHOICE, or *_OF) was not: the member-level
--- call sites invoked the null function pointer directly, causing a
--- SIGSEGV instead of a clean decode/encode failure (issue #12).
+-- asn1c had no PER codec implementation for the SET type
+-- (skeletons/constr_SET.c's asn_OP_SET left uper_decoder and uper_encoder
+-- as null function pointers), so a SET nested inside a PER-encoded PDU
+-- crashed with SIGSEGV at the unguarded member-level call sites
+-- (issue #12). The UPER codec for extension-free SETs is now implemented
+-- per X.691 #20: same as SEQUENCE, but the root components are
+-- transmitted in the canonical order of their tags.
 --
--- This module reproduces the minimal nested case: M is a SEQUENCE whose
--- single member s is of type S, a SET. Decoding or encoding M in UPER
--- (or OER) must fail cleanly (RC_FAIL / encoded == -1) rather than crash.
+-- Types in this module:
+--   M/S:  the original issue #12 reproducer, a SET nested in a
+--         SEQUENCE. {s {a 1, b TRUE}} must encode as 01 80.
+--   S2:   declaration order (b, a) differs from canonical tag order
+--         (a [1], b [2]); exercises the tag2el-driven reordering.
+--   S3:   DEFAULT + OPTIONAL members; exercises the presence bitmap
+--         and the canonical DEFAULT value elimination.
 
 ModuleSetNested
 	{ iso org(3) dod(6) internet (1) private(4) enterprise(1)
@@ -30,6 +33,22 @@ BEGIN
 	S ::= SET {
 		a INTEGER(0..255),
 		b BOOLEAN
+	}
+
+	-- Declaration order differs from the canonical tag order:
+	-- b is declared first but has the greater tag [2], so in UPER
+	-- the components are transmitted as a [1], then b [2].
+	S2 ::= SET {
+		b [2] BOOLEAN,
+		a [1] INTEGER(0..255)
+	}
+
+	-- Presence bitmap (2 bits: a, b in canonical order) plus
+	-- canonical DEFAULT value elimination for a.
+	S3 ::= SET {
+		a INTEGER(0..7) DEFAULT 5,
+		b BOOLEAN OPTIONAL,
+		c INTEGER(0..255)
 	}
 
 END
