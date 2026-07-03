@@ -128,19 +128,19 @@ static const asn_INTEGER_enum_map_t asn_MAP_Enum2_value2enum_1[] = {
 	{ 0,	3,	"red" },
 	{ 1,	5,	"green" },
 	{ 2,	5,	"alpha" },
-	{ 12,	4,	"beta" },
 	{ 23,	6,	"orange" },
 	{ 45,	4,	"blue" },
+	{ 12,	4,	"beta" },
 	{ 103,	5,	"gamma" }
 	/* This list is extensible */
 };
 static const unsigned int asn_MAP_Enum2_enum2value_1[] = {
 	2,	/* alpha(2) */
-	3,	/* beta(12) */
-	5,	/* blue(45) */
+	5,	/* beta(12) */
+	4,	/* blue(45) */
 	6,	/* gamma(103) */
 	1,	/* green(1) */
-	4,	/* orange(23) */
+	3,	/* orange(23) */
 	0	/* red(0) */
 	/* This list is extensible */
 };
@@ -213,14 +213,14 @@ xer_type_encoder_f Enum3_encode_xer;
 
 static const asn_INTEGER_enum_map_t asn_MAP_Enum3_value2enum_1[] = {
 	{ 0,	1,	"a" },
-	{ 1,	1,	"c" },
-	{ 3,	1,	"b" }
+	{ 3,	1,	"b" },
+	{ 1,	1,	"c" }
 	/* This list is extensible */
 };
 static const unsigned int asn_MAP_Enum3_enum2value_1[] = {
 	0,	/* a(0) */
-	2,	/* b(3) */
-	1	/* c(1) */
+	1,	/* b(3) */
+	2	/* c(1) */
 	/* This list is extensible */
 };
 static const asn_INTEGER_specifics_t asn_SPC_Enum3_specs_1 = {
@@ -374,14 +374,14 @@ xer_type_encoder_f Enum5_encode_xer;
 
 static const asn_INTEGER_enum_map_t asn_MAP_Enum5_value2enum_1[] = {
 	{ 0,	1,	"a" },
-	{ 1,	1,	"d" },
-	{ 25,	1,	"z" }
+	{ 25,	1,	"z" },
+	{ 1,	1,	"d" }
 	/* This list is extensible */
 };
 static const unsigned int asn_MAP_Enum5_enum2value_1[] = {
 	0,	/* a(0) */
-	1,	/* d(1) */
-	2	/* z(25) */
+	2,	/* d(1) */
+	1	/* z(25) */
 	/* This list is extensible */
 };
 static const asn_INTEGER_specifics_t asn_SPC_Enum5_specs_1 = {
