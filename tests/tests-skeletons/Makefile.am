@@ -18,7 +18,9 @@ check_PROGRAMS =            \
     check-PER-support       \
     check-PER-UniversalString  \
     check-PER-INTEGER       \
-    check-PER-opentype
+    check-PER-opentype      \
+    check-PER-NativeEnumerated \
+    check-PER-nsnnwn
 
 if EXPLICIT_M32
 check_PROGRAMS +=                   \
@@ -39,7 +41,9 @@ check_PROGRAMS +=                   \
     check-32-PER-support            \
     check-32-PER-UniversalString    \
     check-32-PER-INTEGER            \
-    check-32-PER-opentype
+    check-32-PER-opentype           \
+    check-32-PER-NativeEnumerated   \
+    check-32-PER-nsnnwn
 
 check_32_ber_tlv_tag_CFLAGS=$(CFLAGS_M32)
 check_32_ber_tlv_tag_LDADD=$(LDADD_32)
@@ -95,6 +99,12 @@ check_32_PER_INTEGER_SOURCES=check-PER-INTEGER.c
 check_32_PER_opentype_CFLAGS=$(CFLAGS_M32)
 check_32_PER_opentype_LDADD=$(LDADD_32)
 check_32_PER_opentype_SOURCES=check-PER-opentype.c
+check_32_PER_NativeEnumerated_CFLAGS=$(CFLAGS_M32)
+check_32_PER_NativeEnumerated_LDADD=$(LDADD_32)
+check_32_PER_NativeEnumerated_SOURCES=check-PER-NativeEnumerated.c
+check_32_PER_nsnnwn_CFLAGS=$(CFLAGS_M32)
+check_32_PER_nsnnwn_LDADD=$(LDADD_32)
+check_32_PER_nsnnwn_SOURCES=check-PER-nsnnwn.c
 
 LDADD_32 = -lm $(top_builddir)/skeletons/libasn1cskeletons_c89_32.la
 endif
