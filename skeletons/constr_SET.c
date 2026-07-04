@@ -1310,7 +1310,7 @@ SET_encode_uper(const asn_TYPE_descriptor_t *td,
 
 	/*
 	 * Encode the presence bitmap of the optional members,
-	 * in canonical tag order (X.691 #20.2, #18.2).
+	 * in canonical tag order (X.691 #21; tag order per X.680 #8.6).
 	 */
 	for(i = 0; i < td->elements_count; i++) {
 		asn_TYPE_member_t *elm;
