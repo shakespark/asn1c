@@ -156,10 +156,21 @@ NativeEnumerated_decode_uper(const asn_codec_ctx_t *opt_codec_ctx,
 			 */
 			if(value > 65535)
 				ASN__DECODE_FAILED;
+#ifdef ASN_REJECT_UNKNOWN_EXTENSIONS
+			/*
+			 * Strict mode: restore the pre-fix behavior of cleanly failing
+			 * on an unknown extension value instead of storing it as
+			 * LONG_MAX - index for later relay. Escape hatch for callers
+			 * not yet prepared to see values outside the known enumeration
+			 * (see ASN_REJECT_UNKNOWN_EXTENSIONS in asn_internal.h).
+			 */
+			ASN__DECODE_FAILED;
+#else
 			*native = LONG_MAX - value;
 			ASN_DEBUG("Decoded %s = unknown extension index %ld"
 				" (stored as LONG_MAX-%ld)", td->name, value, value);
 			return rval;
+#endif	/* ASN_REJECT_UNKNOWN_EXTENSIONS */
 		}
 		value += specs->extension - 1;
 	}
@@ -246,6 +257,13 @@ NativeEnumerated_encode_uper(const asn_TYPE_descriptor_t *td,
 		 * through as an index too (garbage in, garbage out, as in OSS); a
 		 * reserved-region value handed to a non-extensible enumeration
 		 * still fails below.
+		 *
+		 * This relay branch is intentionally left enabled even when
+		 * ASN_REJECT_UNKNOWN_EXTENSIONS is defined: with that macro set,
+		 * NativeEnumerated_decode_uper() never produces a LONG_MAX-index
+		 * value (it fails cleanly instead), so this code simply never
+		 * triggers in strict builds. It is not itself part of the "unknown
+		 * extension" decode contract the macro governs.
 		 */
 		if((ct->flags & APC_EXTENSIBLE) && specs->extension
 		&& ASN_NATIVE_ENUMERATED_IS_UNKNOWN_EXT(native)) {

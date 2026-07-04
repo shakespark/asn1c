@@ -917,12 +917,24 @@ CHOICE_decode_uper(const asn_codec_ctx_t *opt_codec_ctx,
 			 * where the whole decode is aborting anyway (see the note in
 			 * uper_open_type_skip(), per_opentype.c).
 			 */
+#ifdef ASN_REJECT_UNKNOWN_EXTENSIONS
+			/*
+			 * Strict mode: restore the pre-fix behavior of cleanly failing
+			 * on an unknown extension alternative instead of skipping it
+			 * and presenting the CHOICE as absent. Escape hatch for callers
+			 * not yet prepared to handle present==0 meaning "unknown
+			 * extension skipped" (see ASN_REJECT_UNKNOWN_EXTENSIONS in
+			 * asn_internal.h).
+			 */
+			ASN__DECODE_FAILED;
+#else
 			if(uper_open_type_skip(opt_codec_ctx, pd))
 				ASN__DECODE_STARVED;
 			_set_present_idx(st, specs->pres_offset, specs->pres_size, 0);
 			rv.code = RC_OK;
 			rv.consumed = 0;
 			return rv;
+#endif	/* ASN_REJECT_UNKNOWN_EXTENSIONS */
 		}
 	}
 
