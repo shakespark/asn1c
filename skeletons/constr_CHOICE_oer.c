@@ -212,6 +212,17 @@ CHOICE_decode_oer(const asn_codec_ctx_t *opt_codec_ctx,
                  * compatibility, mirroring the UPER fix in
                  * constr_CHOICE.c's CHOICE_decode_uper()).
                  */
+#ifdef ASN_REJECT_UNKNOWN_EXTENSIONS
+                /*
+                 * Strict mode: restore the pre-fix behavior of cleanly
+                 * failing on an unknown extension alternative instead of
+                 * skipping its Open Type and presenting the CHOICE as
+                 * absent. Escape hatch for callers not yet prepared to
+                 * handle present==0 meaning "unknown extension skipped"
+                 * (see ASN_REJECT_UNKNOWN_EXTENSIONS in asn_internal.h).
+                 */
+                RETURN(RC_FAIL);
+#else
                 ssize_t skipped;
                 ASN_DEBUG(
                     "Skipping unknown open type extension for tag %s "
@@ -236,6 +247,7 @@ CHOICE_decode_oer(const asn_codec_ctx_t *opt_codec_ctx,
                 CHOICE_variant_set_presence(td, st, 0);
                 SET_PHASE(ctx, 2); /* Already decoded everything */
                 RETURN(RC_OK);
+#endif	/* ASN_REJECT_UNKNOWN_EXTENSIONS */
             }
         } while(0);
 
