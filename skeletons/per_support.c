@@ -104,8 +104,9 @@ uper_get_nsnnwn(asn_per_data_t *pd) {
  * short-form general length determinant octet (#11.9.3.6) giving the
  * number of octets ("bytes") used to encode n, followed by that many
  * octets of n itself. uper_get_nsnnwn() only understands 1- or 2-octet
- * long forms (n up to 65535), so we fail cleanly rather than emitting
- * a stream our own decoder (or any compliant peer) cannot read back.
+ * long forms (n up to ASN_UPER_NSNNWN_MAX), so we fail cleanly rather than
+ * emitting a stream our own decoder (or any compliant peer) cannot read
+ * back.
  */
 int
 uper_put_nsnnwn(asn_per_outp_t *po, int n) {
@@ -117,7 +118,7 @@ uper_put_nsnnwn(asn_per_outp_t *po, int n) {
 	}
 	if(n < 256)
 		bytes = 1;
-	else if(n < 65536)
+	else if(n <= ASN_UPER_NSNNWN_MAX)
 		bytes = 2;
 	else
 		return -1;	/* Not supported by uper_get_nsnnwn() either */
