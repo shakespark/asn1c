@@ -32,8 +32,14 @@ extern asn_TYPE_operation_t asn_OP_NativeEnumerated;
  * ASN.1 toolchain (the project's interoperability reference, which stores
  * INT_MAX - index), the UPER decoder stores the wire index enciphered as
  * LONG_MAX - index, i.e.
- * in the reserved region [LONG_MAX - 65535, LONG_MAX] (uper_get_nsnnwn caps
- * the index at two length octets, so 65535 is its widest possible value).
+ * in the reserved region [LONG_MAX - 65535, LONG_MAX].
+ *
+ * The literal 65535 is the widest index the PER runtime can transfer
+ * (ASN_UPER_NSNNWN_MAX in per_support.h: uper_get_nsnnwn() reads at most a
+ * 2-octet long form). It is repeated here rather than referenced because
+ * this header is a self-contained application contract that also ships in
+ * builds without per_support.h; a compile-time cross-check in
+ * NativeEnumerated.c fails the build if the two constants ever drift apart.
  *
  * Contract for such a stored value:
  *   - The application MUST NOT interpret it as a meaningful enumeration
