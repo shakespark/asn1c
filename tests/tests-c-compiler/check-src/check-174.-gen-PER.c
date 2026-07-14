@@ -8,7 +8,8 @@
  * independently, in order of their addition).
  *
  * Golden bytes below are authoritative: produced and cross-verified
- * with the reference toolchain (TOED) from the same module.
+ * with a commercial ASN.1 toolchain (the project's interoperability
+ * reference) from the same module.
  */
 #undef	NDEBUG
 #include <stdio.h>
@@ -34,7 +35,7 @@ xer_cb(const void *buffer, size_t size, void *app_key) {
 }
 
 /*
- * Verify one enumeration value against the reference tool golden UPER byte:
+ * Verify one enumeration value against the reference toolchain's golden UPER byte:
  * encode, compare, decode the golden byte back, re-encode, and
  * round-trip through XER (exercises INTEGER_map_value2enum()).
  */
@@ -46,7 +47,7 @@ check_value(const asn_TYPE_descriptor_t *td, long value,
 	asn_enc_rval_t er;
 	asn_dec_rval_t rv;
 
-	/* Encode and compare against the reference tool golden byte. */
+	/* Encode and compare against the reference toolchain's golden byte. */
 	er = uper_encode_to_buffer(td, 0, &value, buf, sizeof(buf));
 	assert(er.encoded >= 1);
 	assert(er.encoded <= 8);

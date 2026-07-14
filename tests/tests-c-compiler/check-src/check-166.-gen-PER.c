@@ -1,7 +1,8 @@
 /*
  * UPER forward compatibility for an extensible ENUMERATED (Solution C,
- * reference-isomorphic lossless relay), exercised end to end through generated
- * code. A value added by a newer version (an unknown extension) must:
+ * reference-isomorphic lossless relay), exercised end to end through
+ * generated code. A value added by a newer version (an unknown extension)
+ * must:
  *   - decode successfully (X.680 #6) without derailing subsequent fields;
  *   - be stored as LONG_MAX - extension_index, distinct per index and never
  *     aliasing a known value (even in a sparse enumeration);
@@ -50,7 +51,7 @@ int main() {
 
 	/*
 	 * ee6 (extension index 3) => 0x83 => LONG_MAX-3 => relay 0x83.
-	 * This is the reference tool golden byte (base decodes it to INT_MAX-3 and
+	 * This is the reference toolchain's golden byte (base decodes it to INT_MAX-3 and
 	 * re-encodes 0x83); asn1c stores LONG_MAX-3 and does the same.
 	 */
 	static const unsigned char enc_ee6[] = { 0x83 };

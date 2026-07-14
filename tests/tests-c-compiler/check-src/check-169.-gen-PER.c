@@ -9,13 +9,14 @@
  * the canonical order of their tags (X.680 #8.6), taken from the
  * statically sorted specs->tag2el map.
  *
- * All the expected byte strings below are golden bytes produced by the
- * the reference toolchain UPER encoder from the same values (and the reference tool
+ * All the expected byte strings below are golden bytes produced by a
+ * commercial ASN.1 toolchain's (the project's interoperability reference)
+ * UPER encoder from the same values (and the reference toolchain
  * decodes every asn1c-produced encoding back to the same values); they
  * were additionally cross-checked against asn1tools 0.167 (Python).
  * The single encoder divergence is intentional and covered below: for a
- * DEFAULT member explicitly set to its default value, the reference tool (BASIC-PER
- * encoder's choice, X.691 #19.2 NOTE) may encode the member as present
+ * DEFAULT member explicitly set to its default value, the reference
+ * toolchain (BASIC-PER encoder's choice, X.691 #19.2 NOTE) may encode the member as present
  * (S3: ec 24), while asn1c always applies the CANONICAL-PER elimination
  * (61 20). Both are valid UPER; asn1c must decode both.
  */
@@ -162,11 +163,11 @@ check_S3_presence_and_default(void) {
 	}
 
 	/*
-	 * the reference tool interop, decode-only: the reference tool (BASIC-PER encoder's choice)
-	 * may encode a DEFAULT member even when it carries the default
-	 * value: presence 11, a = 101 (5), b = 1, c = 00001001;
-	 * 11 101 1 00001001 (14 bits) -> ec 24, as produced by the reference tool
-	 * ASN.1 Tools 12.0 for { a 5, b TRUE, c 9 }. asn1c must decode
+	 * Reference toolchain interop, decode-only: the reference toolchain
+	 * (BASIC-PER encoder's choice) may encode a DEFAULT member even when
+	 * it carries the default value: presence 11, a = 101 (5), b = 1,
+	 * c = 00001001; 11 101 1 00001001 (14 bits) -> ec 24, as produced by
+	 * the reference toolchain for { a 5, b TRUE, c 9 }. asn1c must decode
 	 * it, and its own re-encoding must collapse to the canonical
 	 * form 61 20 checked above.
 	 */

@@ -5,7 +5,8 @@
  * as an extension with a general length determinant.  Folding the
  * named extension into the root ([2..3]) produces encodings that are
  * incompatible with other ASN.1 tools (golden bytes below verified
- * against the reference toolchain) and corrupts cross-version decoding.
+ * against a commercial ASN.1 toolchain, the project's interoperability
+ * reference) and corrupts cross-version decoding.
  *
  * This test also pins the companion fix: the generated
  * asn_check_constraints() checker must still accept a value whose size
@@ -37,7 +38,7 @@ int main() {
 
 	/*
 	 * '11'B is in the root: ext bit 0, no length, 2 bits of value.
-	 * Golden encoding (the reference tool): 0x60.
+	 * Golden encoding (reference toolchain): 0x60.
 	 */
 	memset(&t, 0, sizeof(t));
 	bits[0] = 0xC0;
@@ -52,7 +53,7 @@ int main() {
 	/*
 	 * '101'B has the extension size 3: ext bit 1, general length
 	 * determinant (8 bits) = 3, then 3 bits of value.
-	 * Golden encoding (the reference tool): 0x81 0xd0.
+	 * Golden encoding (reference toolchain): 0x81 0xd0.
 	 *
 	 * A size-3 value is a legal member of the extensible type, so the
 	 * generated constraint checker must accept it (regression guard for

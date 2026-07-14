@@ -155,8 +155,8 @@ NativeEnumerated_decode_uper(const asn_codec_ctx_t *opt_codec_ctx,
 			 *
 			 * The true abstract value is unknowable to this older decoder,
 			 * and a plain long has no out-of-band way to flag "unknown". So,
-			 * like the reference toolchain (this project's golden reference, which
-			 * stores INT_MAX - index), store the wire index enciphered as
+			 * like a commercial ASN.1 toolchain (the project's interoperability
+			 * reference, which stores INT_MAX - index), store the wire index enciphered as
 			 * LONG_MAX - index -- `value` still holds the raw index here.
 			 * NativeEnumerated_encode_uper recognises this reserved region
 			 * and re-emits the identical index, so the value can be relayed
@@ -267,7 +267,8 @@ NativeEnumerated_encode_uper(const asn_TYPE_descriptor_t *td,
 		 * This mirrors the reference toolchain and yields a byte-for-byte
 		 * identical relay under the same PER transfer syntax. A value the
 		 * application fabricated inside the reserved region is passed
-		 * through as an index too (garbage in, garbage out, as in the reference tool); a
+		 * through as an index too (garbage in, garbage out, as with the
+		 * reference toolchain); a
 		 * reserved-region value handed to a non-extensible enumeration
 		 * still fails below.
 		 *

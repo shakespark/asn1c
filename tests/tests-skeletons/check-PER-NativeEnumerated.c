@@ -181,7 +181,7 @@ main(void) {
      */
     relay_ok(__LINE__, &base_specs, 0x80, LONG_MAX);    /* ext index 0 */
     relay_ok(__LINE__, &base_specs, 0x81, LONG_MAX - 1);/* ext index 1 */
-    relay_ok(__LINE__, &base_specs, 0x83, LONG_MAX - 3);/* ext index 3 (the reference tool ee6) */
+    relay_ok(__LINE__, &base_specs, 0x83, LONG_MAX - 3);/* ext index 3 (ee6) */
 
     /* The stored value is recognised as an unknown-extension placeholder. */
     assert(ASN_NATIVE_ENUMERATED_IS_UNKNOWN_EXT(LONG_MAX));

@@ -6,7 +6,7 @@
 
 -- UPER canonical encoding of a DEFAULT-valued SEQUENCE member (X.691
 -- #19.5 for root components; extended by us to extension additions,
--- matching the reference tool): when the actual value equals the DEFAULT, the member
+-- matching the reference toolchain): when the actual value equals the DEFAULT, the member
 -- must be omitted (root: skip the field after "present" bit; extension
 -- addition group: report it as absent so it does not contribute to the
 -- extension presence bit-map / count / open-type list). asn1c already

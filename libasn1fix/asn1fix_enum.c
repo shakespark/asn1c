@@ -98,7 +98,7 @@ asn1f_fix_enum(arg_t *arg) {
 	 * assigned. Extension addition ("...") values are NOT collected
 	 * here: the root is numbered as if the additions were absent,
 	 * and an addition whose explicit value collides with a root
-	 * value is an error, reported in the second pass. (the reference tool agrees:
+	 * value is an error, reported in the second pass. (the reference toolchain agrees:
 	 * { red, green, ..., blue(1) } is rejected with green=1 taken,
 	 * not silently renumbered to green=2.)
 	 */

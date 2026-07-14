@@ -2,8 +2,9 @@
  * UPER forward compatibility: an old decoder must skip the unknown
  * extension additions produced by a newer version of the protocol and
  * keep decoding the remaining fields (X.691).
- * The golden byte streams below were produced by a reference encoder
- * (the reference toolchain) from a newer version of this module:
+ * The golden byte streams below were produced by a commercial ASN.1
+ * toolchain (the project's interoperability reference) from a newer
+ * version of this module:
  *   T': SEQUENCE { seq1 MsgCount, ..., [[seq8 seq9]], seq10 } (all present)
  *   C': CHOICE { c1, c2, ..., c3 MsgCount }                   (c3 chosen)
  */

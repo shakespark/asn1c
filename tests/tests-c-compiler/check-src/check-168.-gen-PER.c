@@ -3,8 +3,8 @@
  * X.691 #19.5 states the canonical elimination for root DEFAULT components
  * ("shall always be absent if the value ... is the default value"); clause
  * 19 does not spell this out verbatim for extension additions, so we apply
- * the same principle there, matching observed the reference tool behavior: when the actual
- * value equals the DEFAULT, the member must not contribute to the
+ * the same principle there, matching observed reference-toolchain behavior:
+ * when the actual value equals the DEFAULT, the member must not contribute to the
  * extension addition group -- it must
  * not set the extension presence bit, must not be counted towards the
  * extension bit-map length, and must not be emitted as an open type

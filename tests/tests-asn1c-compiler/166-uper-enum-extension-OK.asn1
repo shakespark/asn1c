@@ -12,7 +12,7 @@
 -- to be accepted (RC_OK) without aliasing any known value, so fields
 -- following the enum keep decoding, and to re-encode byte-for-byte
 -- identically, so an unknown value received from one peer can be relayed
--- to another under the same PER transfer syntax, as the reference tool tool does.
+-- to another under the same PER transfer syntax, as the reference toolchain does.
 
 ModuleUPEREnumExtension
 	{ iso org(3) dod(6) internet (1) private(4) enterprise(1)

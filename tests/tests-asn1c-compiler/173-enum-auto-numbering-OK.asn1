@@ -36,13 +36,13 @@ BEGIN
 	-- item declared LATER already owns: 20.6's "unused" spans the
 	-- whole enumeration, so b skips 0 (taken by c) and gets 1.
 	-- A single-pass "smallest unused so far" scheme would assign
-	-- b=0 and then reject c(0) as a collision. (the reference tool assigns
-	-- b=1 here.)
+	-- b=0 and then reject c(0) as a collision. (The reference toolchain
+	-- assigns b=1 here.)
 	E4 ::= ENUMERATED { a(5), b, c(0) }
 
 	-- Same order-independence with a later explicit value in the
 	-- root: d skips 1 (taken by z) and gets 2, exactly as if the
-	-- type were written { a, z(1), d }. (the reference tool assigns d=2.)
+	-- type were written { a, z(1), d }. (The reference toolchain assigns d=2.)
 	E5 ::= ENUMERATED { a, d, z(1) }
 
 END

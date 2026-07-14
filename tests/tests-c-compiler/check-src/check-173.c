@@ -50,13 +50,13 @@ STATIC_ASSERT(E3_h == 2, E3_h_is_2_unaffected_by_fix);
 
 /* Automatic value must not preempt an explicit value declared later:
  * in { a(5), b, c(0) }, b skips 0 (owned by c) and gets 1.
- * the reference tool agrees (b=1, c=0). */
+ * The reference toolchain agrees (b=1, c=0). */
 STATIC_ASSERT(E4_a == 5, E4_a_is_5);
 STATIC_ASSERT(E4_b == 1, E4_b_is_1_skips_later_explicit_0);
 STATIC_ASSERT(E4_c == 0, E4_c_is_0);
 
 /* Order-independence: { a, d, z(1) } === { a, z(1), d }, so d=2.
- * the reference tool agrees (d=2). */
+ * The reference toolchain agrees (d=2). */
 STATIC_ASSERT(E5_a == 0, E5_a_is_0);
 STATIC_ASSERT(E5_d == 2, E5_d_is_2_skips_later_explicit_1);
 STATIC_ASSERT(E5_z == 1, E5_z_is_1);

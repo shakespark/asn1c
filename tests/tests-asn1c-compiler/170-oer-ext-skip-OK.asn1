@@ -26,8 +26,8 @@
 --            unknown CHOICE alternative are still recovered.
 --
 -- The golden v2/v3 byte streams in check-170.-gen-OER.c were produced by
--- the reference toolchain OER codec (the interoperability reference)
--- and cross-checked with asn1tools; the reference tool v1 decoder gracefully skips
+-- a commercial ASN.1 toolchain's OER codec (the project's interoperability reference)
+-- and cross-checked with asn1tools; the reference toolchain's v1 decoder gracefully skips
 -- all of them, which is the behavior this fixture pins down for asn1c.
 
 ModuleOerExtSkip

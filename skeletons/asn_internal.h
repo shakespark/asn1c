@@ -37,7 +37,7 @@ int get_asn1c_environment_version(void);	/* Run-time version */
  * the type does NOT fail the whole message. Instead it skips/relays the
  * unknown material and lets an enclosing type keep decoding subsequent
  * fields -- X.680 clause 6 requires this forward compatibility, and it is
- * what the reference toolchain Tools and asn1tools do as well. The three decode sites
+ * what the reference toolchain and asn1tools do as well. The three decode sites
  * below adopted this behavior in recent fixes; the price is that decoding
  * now can succeed while surfacing new, previously-impossible states to the
  * caller (e.g. a CHOICE decoding successfully with no recognized

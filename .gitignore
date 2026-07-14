@@ -97,3 +97,18 @@ doc/docsrc/*.xdv
 #code coverage
 *.gcno
 *.gcda
+
+# Local workspace docs and scratch (not part of the upstream tree)
+/.codegraph/
+/temp/
+/doc/uper-tutorial/
+/CLAUDE.md
+/CLAUDE-quality-directives.md
+/HANDOFF.md
+/DEV_METHODOLOGY.md
+/APP_MIGRATION_GUIDE.md
+/GPT55_REVIEW_*.md
+/PROJECT_RETROSPECTIVE.md
+/OPEN_TYPE_SKIP_FIX.*
+/UPER_EXT_*.md
+/UPER_EXT_*.patch

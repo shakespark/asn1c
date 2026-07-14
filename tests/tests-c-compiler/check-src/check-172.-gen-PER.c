@@ -9,7 +9,8 @@
  * as extension index 0).
  *
  * The golden byte streams below were produced by a reference encoder
- * (the reference toolchain, asn1 -uper) from this same module:
+ * (a commercial ASN.1 toolchain's UPER encoder, the project's
+ * interoperability reference) from this same module:
  *   add63 (ext idx 63) -> bf         (short form boundary)
  *   add64 (ext idx 64) -> c0 50 00   (long form threshold)
  *   add65 (ext idx 65) -> c0 50 40
@@ -32,7 +33,7 @@ check_vector(long value, const unsigned char *expected, size_t expected_len) {
 	asn_dec_rval_t rv;
 	size_t i;
 
-	/* Encode and compare byte-for-byte against the reference tool golden bytes. */
+	/* Encode and compare byte-for-byte against the reference toolchain's golden bytes. */
 	er = uper_encode_to_buffer(&asn_DEF_E, 0, &enc_value,
 			buf, sizeof(buf));
 	assert(er.encoded >= 0);
@@ -65,20 +66,20 @@ check_vector(long value, const unsigned char *expected, size_t expected_len) {
 }
 
 int main() {
-	/* the reference toolchain golden bytes (asn1 -uper). */
-	static const unsigned char oss_add63[] = { 0xbf };
-	static const unsigned char oss_add64[] = { 0xc0, 0x50, 0x00 };
-	static const unsigned char oss_add65[] = { 0xc0, 0x50, 0x40 };
-	static const unsigned char oss_add69[] = { 0xc0, 0x51, 0x40 };
-	static const unsigned char oss_zero[]  = { 0x00 };
+	/* Reference toolchain golden bytes (its UPER encoder). */
+	static const unsigned char ref_add63[] = { 0xbf };
+	static const unsigned char ref_add64[] = { 0xc0, 0x50, 0x00 };
+	static const unsigned char ref_add65[] = { 0xc0, 0x50, 0x40 };
+	static const unsigned char ref_add69[] = { 0xc0, 0x51, 0x40 };
+	static const unsigned char ref_zero[]  = { 0x00 };
 
-	check_vector(E_add63, oss_add63, sizeof(oss_add63));
-	check_vector(E_add64, oss_add64, sizeof(oss_add64));
-	check_vector(E_add65, oss_add65, sizeof(oss_add65));
-	check_vector(E_add69, oss_add69, sizeof(oss_add69));
+	check_vector(E_add63, ref_add63, sizeof(ref_add63));
+	check_vector(E_add64, ref_add64, sizeof(ref_add64));
+	check_vector(E_add65, ref_add65, sizeof(ref_add65));
+	check_vector(E_add69, ref_add69, sizeof(ref_add69));
 
 	/* Root value sanity baseline. */
-	check_vector(E_zero, oss_zero, sizeof(oss_zero));
+	check_vector(E_zero, ref_zero, sizeof(ref_zero));
 
 	printf("Finished %s\n", __FILE__);
 	return 0;

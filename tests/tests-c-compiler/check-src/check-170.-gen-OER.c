@@ -16,10 +16,11 @@
  * Issue #15: an unknown CHOICE extension alternative failed the whole
  * PDU with RC_FAIL instead of being skipped.
  *
- * All golden byte vectors below were produced by the reference toolchain Tools
- * v12.0 OER codec (the interoperability reference) from the v2/v3
- * modules, and independently cross-checked with asn1tools (Python);
- * both tools emit identical bytes.  The the reference tool v1 decoder gracefully
+ * All golden byte vectors below were produced by a commercial ASN.1
+ * toolchain's (the project's interoperability reference) OER codec from
+ * the v2/v3 modules, and independently cross-checked with asn1tools
+ * (Python); both tools emit identical bytes.  The reference toolchain's
+ * v1 decoder gracefully
  * skips every one of these streams (M: a=1 x=2 b=4; MC: pre=1
  * choice=<none> post=4), which is the contract asserted here.
  * The per-byte derivation is documented next to each vector.
@@ -83,9 +84,10 @@ static const uint8_t v2_choice[] = { 0x81, 0x01, 0x05 };
 static const uint8_t v2_mc[] = { 0x01, 0x81, 0x01, 0x05, 0x04 };
 
 /*
- * v1 encodings (root alternatives only), as emitted by the reference tool from
- * the very same v1 module this test is compiled from; pins down the
- * encode-side interoperability so the reference tool can decode what asn1c emits.
+ * v1 encodings (root alternatives only), as emitted by the reference
+ * toolchain from the very same v1 module this test is compiled from;
+ * pins down the encode-side interoperability so the reference toolchain
+ * can decode what asn1c emits.
  *   M {a 1, inner {x 2}, b 4}:   01 00 02 04
  *                                (00 = Inner preamble, no extensions)
  *   MC {pre 1, c c1 : 7, post 4}: 01 80 07 04 (80 = tag [0] of c1)
@@ -254,7 +256,8 @@ check_choice_truncated(void) {
 
 /*
  * Encode-side interop: asn1c's v1 encodings must be byte-identical to
- * the reference tool v1 encodings (the reference tool decodes both back to the same values).
+ * the reference toolchain's v1 encodings (it decodes both back to the
+ * same values).
  */
 static void
 check_v1_encode_interop(void) {

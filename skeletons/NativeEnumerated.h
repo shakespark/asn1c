@@ -28,9 +28,10 @@ extern asn_TYPE_operation_t asn_OP_NativeEnumerated;
  * extension index -- the true abstract value is unknowable to an older
  * decoder (X.680 #20.1 NOTE: enumeration values are ordered but not
  * necessarily contiguous). X.680 #6 forbids failing on such a value, yet a
- * plain long has no out-of-band way to flag "unknown". Following the reference tool
- * ASN.1 tool (this project's golden reference, which stores INT_MAX - index),
- * the UPER decoder stores the wire index enciphered as LONG_MAX - index, i.e.
+ * plain long has no out-of-band way to flag "unknown". Following a commercial
+ * ASN.1 toolchain (the project's interoperability reference, which stores
+ * INT_MAX - index), the UPER decoder stores the wire index enciphered as
+ * LONG_MAX - index, i.e.
  * in the reserved region [LONG_MAX - 65535, LONG_MAX].
  *
  * The literal 65535 is the widest index the PER runtime can transfer

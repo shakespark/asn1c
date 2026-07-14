@@ -22,9 +22,10 @@
  * zero-padded up to it (that also alters the abstract value); it is
  * encoded through the extension addition instead.
  *
- * All expected encodings below are golden bytes produced by the
- * the reference toolchain UPER encoder for the exact
- * same abstract values (issue #11 carries a subset of this table).
+ * All expected encodings below are golden bytes produced by a commercial
+ * ASN.1 toolchain's (the project's interoperability reference) UPER
+ * encoder for the exact same abstract values (issue #11 carries a subset
+ * of this table).
  *
  * Before the fix, BIT_STRING_encode_uper() unconditionally
  * compactified (stripped trailing 0 bits from) every BIT STRING,
@@ -47,8 +48,8 @@ mk_bs(const uint8_t *bytes, size_t nbytes, int bits_unused) {
 }
 
 /*
- * Encode "bs" per "td", check the result matches the reference tool golden
- * bytes "expect" exactly, then decode it back and re-encode: the
+ * Encode "bs" per "td", check the result matches the reference
+ * toolchain's golden bytes "expect" exactly, then decode it back and re-encode: the
  * second encoding must be byte-for-byte identical to the first
  * (round-trip idempotency). This is exactly the invariant that was
  * broken for BIT STRING types without a NamedBitList.
@@ -73,7 +74,7 @@ check_roundtrip(const asn_TYPE_descriptor_t *td, BIT_STRING_t *bs,
 	fprintf(stderr, "\n");
 
 	if(enc_bytes1 != expect_len || memcmp(buf1, expect, expect_len) != 0) {
-		fprintf(stderr, "%s: mismatch vs the reference tool golden:", name);
+		fprintf(stderr, "%s: mismatch vs reference golden:", name);
 		for(i = 0; i < expect_len; i++)
 			fprintf(stderr, " %02x", expect[i]);
 		fprintf(stderr, "\n");
@@ -121,7 +122,7 @@ check_seq_roundtrip(S_t *s, const uint8_t *expect, size_t expect_len,
 	fprintf(stderr, "\n");
 
 	if(enc_bytes1 != expect_len || memcmp(buf1, expect, expect_len) != 0) {
-		fprintf(stderr, "%s: mismatch vs the reference tool golden:", name);
+		fprintf(stderr, "%s: mismatch vs reference golden:", name);
 		for(i = 0; i < expect_len; i++)
 			fprintf(stderr, " %02x", expect[i]);
 		fprintf(stderr, "\n");
@@ -152,7 +153,7 @@ main(void) {
 	 * addition, so 8-bit values encode as: extension bit '1' +
 	 * 8-bit unconstrained length + data (17 bits -> 3 bytes).
 	 * The five 8-bit vectors and their bytes come straight from
-	 * issue #11 (the reference tool-produced reference encodings).
+	 * issue #11 (reference-toolchain-produced encodings).
 	 */
 	{
 		BIT_STRING_t bs;
@@ -232,7 +233,7 @@ main(void) {
 	/*
 	 * Flags ::= BIT STRING {a(0),b(1),c(2)} (SIZE(0..8)) -- has a
 	 * NamedBitList, so trailing 0 bits remain insignificant and the
-	 * encoder keeps stripping them (the reference tool does the same): both the
+	 * encoder keeps stripping them (the reference toolchain does the same): both the
 	 * 3-bit '110'B and the 8-bit '11000000'B canonicalize to the
 	 * 2-bit '11'B and encode as 0x2c.
 	 */
@@ -265,7 +266,7 @@ main(void) {
 	 * S ::= SEQUENCE { flags BIT STRING {x(0),y(1)} (SIZE(0..8)) }:
 	 * the inline NamedBitList member must route to its own
 	 * specifics (has_named_bits=1) through the member table, so
-	 * its trailing 0 bits keep being compacted like the reference tool does.
+	 * its trailing 0 bits keep being compacted like the reference toolchain does.
 	 */
 	{
 		S_t s;
@@ -299,7 +300,7 @@ main(void) {
 	 * TAlias ::= Flags: a top-level alias of a NamedBitList
 	 * BIT STRING must inherit the aliased type's specifics
 	 * (has_named_bits=1) and keep compacting trailing 0 bits,
-	 * byte-identical to Flags and to the reference tool.
+	 * byte-identical to Flags and to the reference toolchain.
 	 */
 	{
 		BIT_STRING_t bs;
