@@ -2,11 +2,19 @@
  * UPER forward compatibility: an old decoder must skip the unknown
  * extension additions produced by a newer version of the protocol and
  * keep decoding the remaining fields (X.691).
- * The golden byte streams below were produced by a commercial ASN.1
- * toolchain (the project's interoperability reference) from a newer
- * version of this module:
- *   T': SEQUENCE { seq1 MsgCount, ..., [[seq8 seq9]], seq10 } (all present)
+ * The golden byte streams below were produced from abstract values by
+ * a commercial ASN.1 toolchain (the project's interoperability
+ * reference), cross-checked with the independent asn1tools codec, from
+ * a newer version of this module:
+ *   T': SEQUENCE { seq1 MsgCount, ..., seq10 MsgCount OPTIONAL }
+ *       (a single flat, ungrouped extension addition -- value
+ *       { seq1 1, seq10 9 })
  *   C': CHOICE { c1, c2, ..., c3 MsgCount }                   (c3 chosen)
+ *   M': SEQUENCE { a MsgCount, t T', b MsgCount }
+ *       (value { a 5, t { seq1 1, seq10 9 }, b 7 }, to check that a
+ *       SEQUENCE field *following* another SEQUENCE with a skipped
+ *       extension is also recovered correctly, mirroring the N test
+ *       below for CHOICE)
  */
 #undef	NDEBUG
 #include <stdio.h>
@@ -17,18 +25,18 @@
 #include <T.h>
 #include <C.h>
 #include <N.h>
+#include <M.h>
 
 int main() {
 	asn_dec_rval_t rv;
 
 	/*
-	 * A SEQUENCE with two unknown extension additions present.
-	 * ext-present=1, seq1=1, 2-bit ext bitmap 11, and two open types
-	 * (1 and 2 bytes of content: not a multiple of 3, which used to
-	 * derail the 24-bit skipping step in uper_sot_suck()).
+	 * A SEQUENCE with one unknown extension addition present:
+	 * ext-present=1, seq1=1, 1-bit ext bitmap 1, one open type
+	 * (1 byte of content, holding seq10=9 padded to an octet).
 	 */
 	static const unsigned char seq_ext[] =
-		"\x81\x03\x80\x88\x00\x89\x00";
+		"\x81\x01\x01\x12";
 	T_t *t = 0;
 	rv = uper_decode(0, &asn_DEF_T, (void *)&t, seq_ext,
 			sizeof(seq_ext) - 1, 0, 0);
@@ -63,6 +71,22 @@ int main() {
 	assert(n->ch.present == C_PR_NOTHING);
 	assert(n->b == 7);
 	ASN_STRUCT_FREE(asn_DEF_N, n);
+
+	/*
+	 * A SEQUENCE-with-skipped-extension nested in another SEQUENCE:
+	 * the field after it must still be recovered (the SEQUENCE
+	 * analogue of the CHOICE case above).
+	 * { a 5, t { seq1 1 (seq10 unknown, skipped) }, b 7 }
+	 */
+	static const unsigned char nest_seq[] = "\x0b\x02\x02\x02\x24\x1c";
+	M_t *m = 0;
+	rv = uper_decode(0, &asn_DEF_M, (void *)&m, nest_seq,
+			sizeof(nest_seq) - 1, 0, 0);
+	assert(rv.code == RC_OK);
+	assert(m->a == 5);
+	assert(m->t.seq1 == 1);
+	assert(m->b == 7);
+	ASN_STRUCT_FREE(asn_DEF_M, m);
 
 	/* Sanity: same-version encodings still round-trip. */
 	unsigned char buf[8];

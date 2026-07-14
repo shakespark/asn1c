@@ -33,6 +33,12 @@ BEGIN
 		b MsgCount
 	}
 
+	M ::= SEQUENCE {
+		a MsgCount,
+		t T,
+		b MsgCount
+	}
+
 	MsgCount ::= INTEGER (0..127)
 
 END
