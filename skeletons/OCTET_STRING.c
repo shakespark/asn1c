@@ -1388,7 +1388,6 @@ OCTET_STRING_decode_uper(const asn_codec_ctx_t *opt_codec_ctx,
 		OS__BPC_U32	= 4
 	} bpc;	/* Bytes per character */
 	unsigned int unit_bits;
-	unsigned int canonical_unit_bits;
 
 	(void)opt_codec_ctx;
 
@@ -1408,19 +1407,19 @@ OCTET_STRING_decode_uper(const asn_codec_ctx_t *opt_codec_ctx,
 		RETURN(RC_FAIL);
 		break;
 	case ASN_OSUBV_STR:
-		canonical_unit_bits = unit_bits = 8;
+		unit_bits = 8;
 		if(cval->flags & APC_CONSTRAINED)
 			unit_bits = cval->range_bits;
 		bpc = OS__BPC_CHAR;
 		break;
 	case ASN_OSUBV_U16:
-		canonical_unit_bits = unit_bits = 16;
+		unit_bits = 16;
 		if(cval->flags & APC_CONSTRAINED)
 			unit_bits = cval->range_bits;
 		bpc = OS__BPC_U16;
 		break;
 	case ASN_OSUBV_U32:
-		canonical_unit_bits = unit_bits = 32;
+		unit_bits = 32;
 		if(cval->flags & APC_CONSTRAINED)
 			unit_bits = cval->range_bits;
 		bpc = OS__BPC_U32;
@@ -1443,8 +1442,13 @@ OCTET_STRING_decode_uper(const asn_codec_ctx_t *opt_codec_ctx,
 		int inext = per_get_few_bits(pd, 1);
 		if(inext < 0) RETURN(RC_WMORE);
 		if(inext) {
+			/*
+			 * X.691 #30.4: outside the extension root the value is
+			 * encoded as if there were no effective size constraint,
+			 * but the effective permitted-alphabet constraint stays:
+			 * the per-character width does not change.
+			 */
 			csiz = &asn_DEF_OCTET_STRING_constraints.size;
-			unit_bits = canonical_unit_bits;
 		}
 	}
 
@@ -1531,7 +1535,6 @@ OCTET_STRING_encode_uper(const asn_TYPE_descriptor_t *td,
 	asn_enc_rval_t er = { 0, 0, 0 };
 	int inext = 0;		/* Lies not within extension root */
 	unsigned int unit_bits;
-	unsigned int canonical_unit_bits;
 	size_t size_in_units;
 	const uint8_t *buf;
 	int ret;
@@ -1560,14 +1563,14 @@ OCTET_STRING_encode_uper(const asn_TYPE_descriptor_t *td,
 	case ASN_OSUBV_BIT:
 		ASN__ENCODE_FAILED;
 	case ASN_OSUBV_STR:
-		canonical_unit_bits = unit_bits = 8;
+		unit_bits = 8;
 		if(cval->flags & APC_CONSTRAINED)
 			unit_bits = cval->range_bits;
 		bpc = OS__BPC_CHAR;
 		size_in_units = st->size;
 		break;
 	case ASN_OSUBV_U16:
-		canonical_unit_bits = unit_bits = 16;
+		unit_bits = 16;
 		if(cval->flags & APC_CONSTRAINED)
 			unit_bits = cval->range_bits;
 		bpc = OS__BPC_U16;
@@ -1578,7 +1581,7 @@ OCTET_STRING_encode_uper(const asn_TYPE_descriptor_t *td,
 		}
 		break;
 	case ASN_OSUBV_U32:
-		canonical_unit_bits = unit_bits = 32;
+		unit_bits = 32;
 		if(cval->flags & APC_CONSTRAINED)
 			unit_bits = cval->range_bits;
 		bpc = OS__BPC_U32;
@@ -1602,8 +1605,12 @@ OCTET_STRING_encode_uper(const asn_TYPE_descriptor_t *td,
         if((ssize_t)size_in_units < csiz->lower_bound
            || (ssize_t)size_in_units > csiz->upper_bound) {
             if(ct_extensible) {
+                /*
+                 * X.691 #30.4: only the size constraint is lifted in the
+                 * extension region; the effective permitted-alphabet
+                 * constraint (and thus the character width) still applies.
+                 */
                 csiz = &asn_DEF_OCTET_STRING_constraints.size;
-                unit_bits = canonical_unit_bits;
                 inext = 1;
             } else {
                 ASN__ENCODE_FAILED;
