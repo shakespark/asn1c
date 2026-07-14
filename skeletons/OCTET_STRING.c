@@ -1231,7 +1231,10 @@ static int
 OCTET_STRING_per_get_characters(asn_per_data_t *po, uint8_t *buf,
 		size_t units, unsigned int bpc, unsigned int unit_bits,
 		long lb, long ub, const asn_per_constraints_t *pc) {
-	uint8_t *end = buf + units * bpc;
+	uint8_t *end;
+
+	if(units == 0) return 0;	/* Nothing to do; keep buf out of ptr math */
+	end = buf + units * bpc;
 
 	ASN_DEBUG("Expanding %d characters into (%ld..%ld):%d",
 		(int)units, lb, ub, unit_bits);
@@ -1311,7 +1314,10 @@ static int
 OCTET_STRING_per_put_characters(asn_per_outp_t *po, const uint8_t *buf,
 		size_t units, unsigned int bpc, unsigned int unit_bits,
 		long lb, long ub, const asn_per_constraints_t *pc) {
-	const uint8_t *end = buf + units * bpc;
+	const uint8_t *end;
+
+	if(units == 0) return 0;	/* Nothing to do; keep buf out of ptr math */
+	end = buf + units * bpc;
 
 	ASN_DEBUG("Squeezing %d characters into (%ld..%ld):%d (%d bpc)",
 		(int)units, lb, ub, unit_bits, bpc);
@@ -1526,7 +1532,7 @@ OCTET_STRING_decode_uper(const asn_codec_ctx_t *opt_codec_ctx,
 	st->size = 0;
 	do {
 		ssize_t raw_len;
-		ssize_t len_bytes;
+		size_t len_bytes;
 		void *p;
 		int ret;
 
@@ -1539,8 +1545,17 @@ OCTET_STRING_decode_uper(const asn_codec_ctx_t *opt_codec_ctx,
 		ASN_DEBUG("Got PER length eb %ld, len %ld, %s (%s)",
 			(long)csiz->effective_bits, (long)raw_len,
 			repeat ? "repeat" : "once", td->name);
-        len_bytes = raw_len * bpc;
-		p = REALLOC(st->buf, st->size + len_bytes + 1);
+        /*
+         * Guard the running length against overflow before allocating:
+         * an unconstrained (extension-region) length determinant is
+         * attacker-controlled, and a zero-bit alphabet consumes no wire
+         * payload per unit, so the reassembled size must not be allowed
+         * to wrap st->size or the REALLOC argument.
+         */
+        if((size_t)raw_len > (SIZE_MAX - 1) / bpc) RETURN(RC_FAIL);
+        len_bytes = (size_t)raw_len * bpc;
+        if(len_bytes > SIZE_MAX - 1 - st->size) RETURN(RC_FAIL);
+        p = REALLOC(st->buf, st->size + len_bytes + 1);
 		if(!p) RETURN(RC_FAIL);
 		st->buf = (uint8_t *)p;
 
@@ -1692,7 +1707,8 @@ OCTET_STRING_encode_uper(const asn_TYPE_descriptor_t *td,
                                               cval->upper_bound, pc);
         if(ret) ASN__ENCODE_FAILED;
 
-        buf += may_save * bpc;
+        if(may_save)	/* buf may be NULL for an empty string */
+            buf += may_save * bpc;
         size_in_units -= may_save;
         assert(!(may_save & 0x07) || !size_in_units);
         if(need_eom && uper_put_length(po, 0, 0))
