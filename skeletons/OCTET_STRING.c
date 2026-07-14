@@ -1236,8 +1236,24 @@ OCTET_STRING_per_get_characters(asn_per_data_t *po, uint8_t *buf,
 	ASN_DEBUG("Expanding %d characters into (%ld..%ld):%d",
 		(int)units, lb, ub, unit_bits);
 
-	/* X.691: 27.5.4 */
-	if((unsigned long)ub <= ((unsigned long)2 << (unit_bits - 1))) {
+	if(unit_bits == 0) {
+		/*
+		 * X.691 #30.5.2: a single-character alphabet (N = 1) encodes
+		 * into b = 0 bits; the characters are not on the wire at all.
+		 */
+		for(; buf < end; buf += bpc) {
+			switch(bpc) {
+			case 1: *buf = lb; break;
+			case 2: buf[0] = lb >> 8; buf[1] = lb; break;
+			case 4: buf[0] = lb >> 24; buf[1] = lb >> 16;
+				buf[2] = lb >> 8; buf[3] = lb; break;
+			}
+		}
+		return 0;
+	}
+
+	/* X.691 #30.5.4 a): direct values are usable only if ub <= 2^b - 1 */
+	if((unsigned long)ub <= ((unsigned long)2 << (unit_bits - 1)) - 1) {
 		/* Decode without translation */
 		lb = 0;
 	} else if(pc && pc->code2value) {
@@ -1300,8 +1316,28 @@ OCTET_STRING_per_put_characters(asn_per_outp_t *po, const uint8_t *buf,
 	ASN_DEBUG("Squeezing %d characters into (%ld..%ld):%d (%d bpc)",
 		(int)units, lb, ub, unit_bits, bpc);
 
-	/* X.691: 27.5.4 */
-	if((unsigned long)ub <= ((unsigned long)2 << (unit_bits - 1))) {
+	if(unit_bits == 0) {
+		/*
+		 * X.691 #30.5.2: a single-character alphabet (N = 1) encodes
+		 * into b = 0 bits; nothing is emitted for the characters, but
+		 * the value must consist of that single character.
+		 */
+		for(; buf < end; buf += bpc) {
+			uint32_t value;
+			switch(bpc) {
+			case 1: value = *(const uint8_t *)buf; break;
+			case 2: value = (buf[0] << 8) | buf[1]; break;
+			case 4: value = (buf[0] << 24) | (buf[1] << 16)
+					| (buf[2] << 8) | buf[3]; break;
+			default: return -1;
+			}
+			if((long)value != lb) return -1;
+		}
+		return 0;
+	}
+
+	/* X.691 #30.5.4 a): direct values are usable only if ub <= 2^b - 1 */
+	if((unsigned long)ub <= ((unsigned long)2 << (unit_bits - 1)) - 1) {
 		/* Encode as is */
 		lb = 0;
 	} else if(pc && pc->value2code) {
