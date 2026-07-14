@@ -69,6 +69,7 @@ TESTS += check-src/check-161.-fcompound-names.-gen-PER.c
 TESTS += check-src/check-162.c
 TESTS += check-src/check-164.-fcompound-names.c
 TESTS += check-src/check-167.-gen-PER.c
+TESTS += check-src/check-176.-gen-PER.c
 
 if TEST_64BIT
 TESTS += check-src/check64-134.-gen-PER.c
