@@ -10,6 +10,12 @@
 -- extension addition rather than zero-padded (companion to
 -- check-165's SEQUENCE/CHOICE extension-skip tests, and to
 -- check-167/171's same-version BIT STRING extension coverage).
+--
+-- Also covers the companion compactify-gating fix (issue #11's
+-- original reproducer): a BIT STRING with no NamedBitList must not
+-- have its trailing 0 bits stripped before UPER length/data are
+-- computed, or a value like '11110000'B under SIZE(4,...,8) is
+-- silently re-encoded as if it were '1111'B.
 
 ModuleBitStringExtensionNested
 	{ iso org(3) dod(6) internet (1) private(4) enterprise(1)
@@ -24,5 +30,9 @@ BEGIN
 	}
 
 	MsgCount ::= INTEGER (0..127)
+
+	-- No NamedBitList: trailing 0 bits are part of the abstract
+	-- value and must not be compactified away.
+	Comp ::= BIT STRING (SIZE(4,...,8))
 
 END
