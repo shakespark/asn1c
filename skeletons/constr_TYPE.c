@@ -11,6 +11,12 @@
  */
 int get_asn1c_environment_version() { return ASN1C_ENVIRONMENT_VERSION; }
 
+/*
+ * Off by default: standard visualization behavior. See the declaration in
+ * constr_TYPE.h for the exact effect when set. Read only on print/XER paths.
+ */
+int asn_print_unknown_ext_marker = 0;
+
 static asn_app_consume_bytes_f _print2fp;
 
 /*

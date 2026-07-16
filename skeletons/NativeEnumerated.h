@@ -67,7 +67,7 @@ per_type_decoder_f NativeEnumerated_decode_uper;
 per_type_encoder_f NativeEnumerated_encode_uper;
 
 #define NativeEnumerated_free       NativeInteger_free
-#define NativeEnumerated_print      NativeInteger_print
+asn_struct_print_f NativeEnumerated_print;
 #define NativeEnumerated_compare    NativeInteger_compare
 #define NativeEnumerated_random_fill NativeInteger_random_fill
 #define NativeEnumerated_constraint asn_generic_no_constraint

@@ -797,6 +797,20 @@ CHOICE_encode_xer(const asn_TYPE_descriptor_t *td, const void *sptr, int ilevel,
 	present = _fetch_present_idx(sptr, specs->pres_offset,specs->pres_size);
 
 	if(present == 0 || present > td->elements_count) {
+		/*
+		 * present==0 on an extensible CHOICE is how a forward-compatible UPER
+		 * decode records "an unknown extension alternative was received and
+		 * skipped" (see CHOICE_decode_uper). If the visualization switch is on,
+		 * emit a neutral placeholder instead of failing. Default (off) keeps
+		 * the standard failure; a non-extensible CHOICE always fails here.
+		 */
+		if(asn_print_unknown_ext_marker && present == 0
+		&& specs->ext_start != -1) {
+			er.encoded = asn__format_to_callback(cb, app_key,
+				"<_asn1c_unknownExtension/>");
+			if(er.encoded < 0) ASN__ENCODE_FAILED;
+			ASN__ENCODED_OK(er);
+		}
 		ASN__ENCODE_FAILED;
 	}  else {
 		asn_enc_rval_t tmper;
@@ -1115,6 +1129,17 @@ CHOICE_print(const asn_TYPE_descriptor_t *td, const void *sptr, int ilevel,
 		return elm->type->op->print_struct(elm->type, memb_ptr, ilevel,
 			cb, app_key);
 	} else {
+		/*
+		 * present==0 on an extensible CHOICE means a forward-compatible UPER
+		 * decode skipped an unknown extension alternative. With the
+		 * visualization switch on, print a neutral, JSON-safe placeholder that
+		 * distinguishes "unknown extension skipped" from a genuinely absent
+		 * selection; otherwise keep the standard "<absent>".
+		 */
+		if(asn_print_unknown_ext_marker && present == 0
+		&& specs->ext_start != -1)
+			return (cb("\"_asn1c_unknownExtension\"", 25, app_key) < 0)
+				? -1 : 0;
 		return (cb("<absent>", 8, app_key) < 0) ? -1 : 0;
 	}
 }

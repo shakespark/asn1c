@@ -253,6 +253,40 @@ int asn_fprint(FILE *stream, /* Destination stream descriptor */
                const asn_TYPE_descriptor_t *td, /* ASN.1 type descriptor */
                const void *struct_ptr);         /* Structure to be printed */
 
+/*
+ * Runtime switch for visualizing unknown extensions recovered by a
+ * forward-compatible UPER decode. When non-zero, the human-readable printer
+ * (asn_fprint / print_struct) and the XER encoders emit a neutral placeholder
+ * for a value that an older schema decoded but cannot name:
+ *   - ENUMERATED unknown extension value  ->
+ *       print: "_asn1c_unknownExtension:<idx>"
+ *       XER:   <_asn1c_unknownExtension index="<idx>"/>
+ *   - CHOICE unknown extension alternative ->
+ *       print: "_asn1c_unknownExtension"
+ *       XER:   <_asn1c_unknownExtension/>
+ * The "_asn1c_" prefix cannot clash with a real enumerator/alternative name:
+ * ASN.1 identifiers cannot contain underscores.
+ * When zero (the default) the standard behavior is kept unchanged: ENUMERATED
+ * prints the raw sentinel number, CHOICE prints "<absent>", and XER encoding
+ * fails. This flag is read ONLY on the print/XER paths; it never affects
+ * UPER/DER/OER/BER encoding or any decoding, so enabling it cannot change wire
+ * output -- only visualization.
+ *
+ * Usage caveats:
+ *  1. Set it once at application startup, BEFORE any worker threads are
+ *     created, and do not change it afterwards (it is a plain int, not an
+ *     atomic; concurrent modification while printing is a data race).
+ *  2. A zero-initialized/reset extensible CHOICE (present == 0) that was
+ *     never decoded is indistinguishable from a skipped unknown extension
+ *     and will show the same placeholder -- only print/encode structures
+ *     that came out of a successful decode.
+ *  3. JSON consumers: with the switch on, an ENUMERATED field that is
+ *     normally a bare number (and a CHOICE that is normally an object) may
+ *     instead be the quoted placeholder string above -- parsers must accept
+ *     both types for such fields.
+ */
+extern int asn_print_unknown_ext_marker;
+
 #ifdef __cplusplus
 }
 #endif

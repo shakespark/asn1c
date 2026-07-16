@@ -32,7 +32,7 @@ static const ber_tlv_tag_t asn_DEF_NativeEnumerated_tags[] = {
 };
 asn_TYPE_operation_t asn_OP_NativeEnumerated = {
 	NativeInteger_free,
-	NativeInteger_print,
+	NativeEnumerated_print,
 	NativeInteger_compare,
 	NativeInteger_decode_ber,
 	NativeInteger_encode_der,
@@ -90,11 +90,63 @@ NativeEnumerated_encode_xer(const asn_TYPE_descriptor_t *td, const void *sptr,
         if(er.encoded < 0) ASN__ENCODE_FAILED;
         ASN__ENCODED_OK(er);
     } else {
+        /*
+         * No known enumeration maps to this value. If the visualization
+         * switch is on and this is an unknown-extension sentinel stored by a
+         * forward-compatible UPER decode (see NativeEnumerated.h), emit a
+         * neutral placeholder carrying the extension index instead of failing.
+         * Default (switch off) keeps the standard "unknown value" failure.
+         */
+        if(asn_print_unknown_ext_marker && specs && specs->extension
+        && ASN_NATIVE_ENUMERATED_IS_UNKNOWN_EXT(*native)) {
+            long ext_index = LONG_MAX - *native;
+            er.encoded = asn__format_to_callback(cb, app_key,
+                "<_asn1c_unknownExtension index=\"%ld\"/>", ext_index);
+            if(er.encoded < 0) ASN__ENCODE_FAILED;
+            ASN__ENCODED_OK(er);
+        }
         ASN_DEBUG(
             "ASN.1 forbids dealing with "
             "unknown value of ENUMERATED type");
         ASN__ENCODE_FAILED;
     }
+}
+
+/*
+ * Human-readable printer for ENUMERATED. Behaves exactly like
+ * NativeInteger_print, except that when the visualization switch is on and the
+ * value is an unknown-extension sentinel stored by a forward-compatible UPER
+ * decode (see NativeEnumerated.h), it emits a neutral, JSON-safe placeholder
+ * "_asn1c_unknownExtension:<index>" in place of the raw near-LONG_MAX sentinel
+ * number. The leading "_asn1c_" makes a clash with a real enumerator name
+ * impossible: ASN.1 identifiers cannot contain underscores.
+ */
+int
+NativeEnumerated_print(const asn_TYPE_descriptor_t *td, const void *sptr,
+                       int ilevel, asn_app_consume_bytes_f *cb, void *app_key) {
+    const asn_INTEGER_specifics_t *specs =
+        (const asn_INTEGER_specifics_t *)td->specifics;
+    const long *native = (const long *)sptr;
+
+    /*
+     * Check the map FIRST: a value that maps to a known enumerator must be
+     * printed as that enumerator even if it happens to fall inside the
+     * reserved sentinel region (keeps print consistent with XER, which also
+     * checks the map before treating the value as an unknown-extension
+     * sentinel).
+     */
+    if(asn_print_unknown_ext_marker && native && specs && specs->extension
+    && ASN_NATIVE_ENUMERATED_IS_UNKNOWN_EXT(*native)
+    && !INTEGER_map_value2enum(specs, *native)) {
+        long ext_index = LONG_MAX - *native;
+        char scratch[64];
+        int ret = snprintf(scratch, sizeof(scratch),
+                           "\"_asn1c_unknownExtension:%ld\"", ext_index);
+        if(ret < 0 || (size_t)ret >= sizeof(scratch)) return -1;
+        return (cb(scratch, ret, app_key) < 0) ? -1 : 0;
+    }
+
+    return NativeInteger_print(td, sptr, ilevel, cb, app_key);
 }
 
 asn_dec_rval_t
