@@ -75,8 +75,12 @@ def build_converter(workdir):
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     cc = os.environ.get("CC", "cc")
     sources = sorted(glob.glob(os.path.join(workdir, "*.c")))
+    # -DASN_DISABLE_OER_SUPPORT matches -no-gen-OER above: the OER
+    # skeletons are not copied, and constr_TYPE.h includes their headers
+    # unless the macro is defined (the generated Makefile does the same).
     subprocess.run(
-        [cc, "-O1", "-I.", "-DASN_PDU_COLLECTION", "-o", "conv"]
+        [cc, "-O1", "-I.", "-DASN_PDU_COLLECTION",
+         "-DASN_DISABLE_OER_SUPPORT", "-o", "conv"]
         + [os.path.basename(s) for s in sources] + ["-lm"],
         cwd=workdir, check=True)
     return os.path.join(workdir, "conv")
