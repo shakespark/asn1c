@@ -14,7 +14,11 @@ nobase_dist_smods_DATA =     \
 	standard-modules/ASN1C-UsefulInformationObjectClasses.asn1
 
 
-uninstall-local:
+# Must be a -hook, not -local: automake gives no ordering guarantee
+# between uninstall-local and the uninstall-*DATA rules, and removing
+# the whole $(pkgdatadir) first makes the DATA rules' "cd" fail
+# (breaks `make distcheck`). Hooks are guaranteed to run last.
+uninstall-hook:
 	-@echo -n " "
 	-rm -f -r $(DESTDIR)$(pkgdatadir)
 
