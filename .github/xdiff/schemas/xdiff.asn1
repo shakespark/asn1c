@@ -1,0 +1,47 @@
+-- Differential-testing corpus: small type shapes whose UPER encodings are
+-- compared byte-for-byte between asn1c (via converter-example relay) and
+-- the independent asn1tools Python implementation.
+-- Shapes intentionally cover the extension-interop surface maintained in
+-- this fork: extensible ENUMERATED with interleaved values, extensible
+-- SIZE-constrained BIT STRING, extension additions in SEQUENCE (open-type
+-- wrapping), and extensible CHOICE.
+XDiff DEFINITIONS AUTOMATIC TAGS ::= BEGIN
+
+  EInterleaved ::= ENUMERATED { a(1), c(3), ..., b(2) }
+
+  EAuto ::= ENUMERATED { x, y, ..., z }
+
+  IConstr ::= INTEGER (0..255)
+
+  IWide ::= INTEGER (-1234..123456789)
+
+  IExt ::= INTEGER (0..7, ...)
+
+  BStr ::= BIT STRING (SIZE(4..12))
+
+  BStrExt ::= BIT STRING (SIZE(4..8, ...))
+
+  OStr ::= OCTET STRING (SIZE(0..16))
+
+  SeqExt ::= SEQUENCE {
+    i INTEGER (0..63),
+    b BOOLEAN,
+    ...,
+    s IA5String (SIZE(1..8)) OPTIONAL,
+    j INTEGER (0..15)
+  }
+
+  ChExt ::= CHOICE {
+    i INTEGER (0..63),
+    b BOOLEAN,
+    ...,
+    o OCTET STRING (SIZE(1..4))
+  }
+
+  Nested ::= SEQUENCE {
+    e EInterleaved,
+    ch ChExt,
+    bs BStrExt OPTIONAL
+  }
+
+END
