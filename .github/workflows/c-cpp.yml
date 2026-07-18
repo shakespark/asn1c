@@ -393,7 +393,7 @@ jobs:
       # round-trip test.  Full-corpus fuzzing stays opt-in / local.
       timeout-minutes: 45
       run: |
-        make -C tests/tests-randomized check FUZZ_TIME=1 \
+        make -C tests/tests-randomized -j"$(nproc)" check FUZZ_TIME=1 \
           TESTS="bundles/03-ENUMERATED-bundle.txt \
                  bundles/05-BIT-STRING-bundle.txt \
                  bundles/15-CHOICE-bundle.txt \
