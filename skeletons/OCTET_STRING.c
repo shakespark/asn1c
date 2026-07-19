@@ -615,7 +615,7 @@ OCTET_STRING_encode_xer(const asn_TYPE_descriptor_t *td, const void *sptr,
 	 * Dump the contents of the buffer in hexadecimal.
 	 */
 	buf = st->buf;
-	end = buf + st->size;
+	end = buf ? buf + st->size : buf;
 	if(flags & XER_F_CANONICAL) {
 		char *scend = scratch + (sizeof(scratch) - 2);
 		for(; buf < end; buf++) {
@@ -762,7 +762,7 @@ OCTET_STRING_encode_xer_utf8(const asn_TYPE_descriptor_t *td, const void *sptr,
 		ASN__ENCODE_FAILED;
 
 	buf = st->buf;
-	end = buf + st->size;
+	end = buf ? buf + st->size : buf;
 	for(ss = buf; buf < end; buf++) {
 		unsigned int ch = *buf;
 		int s_len;	/* Special encoding sequence length */
