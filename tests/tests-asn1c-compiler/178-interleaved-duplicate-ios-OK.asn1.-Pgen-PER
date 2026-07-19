@@ -14,8 +14,8 @@
 typedef enum value_PR {
 	value_PR_NOTHING,	/* No components present */
 	value_PR_INTEGER,
-	value_PR_INTEGER_1,
-	value_PR_BOOLEAN
+	value_PR_BOOLEAN,
+	value_PR_INTEGER_1
 } value_PR;
 
 /*** <<< TYPE-DECLS [T] >>> ***/
@@ -26,8 +26,8 @@ typedef struct T {
 		value_PR present;
 		union T__value_u {
 			long	 INTEGER;
-			long	 INTEGER_1;
 			BOOLEAN_t	 BOOLEAN;
+			long	 INTEGER_1;
 		} choice;
 		
 		/* Context for parsing across buffer boundaries */
@@ -51,9 +51,9 @@ static const asn_ioc_cell_t asn_IOS_Objs_1_rows[] = {
 	{ "&id", aioc__value, &asn_DEF_NativeInteger, &asn_VAL_1_1 },
 	{ "&Type", aioc__type, &asn_DEF_NativeInteger },
 	{ "&id", aioc__value, &asn_DEF_NativeInteger, &asn_VAL_2_2 },
-	{ "&Type", aioc__type, &asn_DEF_NativeInteger },
+	{ "&Type", aioc__type, &asn_DEF_BOOLEAN },
 	{ "&id", aioc__value, &asn_DEF_NativeInteger, &asn_VAL_3_3 },
-	{ "&Type", aioc__type, &asn_DEF_BOOLEAN }
+	{ "&Type", aioc__type, &asn_DEF_NativeInteger }
 };
 static const asn_ioc_set_t asn_IOS_Objs_1[] = {
 	3, 2, asn_IOS_Objs_1_rows
@@ -165,15 +165,6 @@ static asn_TYPE_member_t asn_MBR_value_3[] = {
 		0, 0, /* No default value */
 		.name = "INTEGER"
 		},
-	{ ATF_NOFLAGS, 0, offsetof(struct value, choice.INTEGER_1),
-		.tag = (ASN_TAG_CLASS_UNIVERSAL | (2 << 2)),
-		.tag_mode = 0,
-		.type = &asn_DEF_NativeInteger,
-		.type_selector = 0,
-		{ .oer_constraints = 0, .per_constraints = 0, .general_constraints = 0 },
-		0, 0, /* No default value */
-		.name = "INTEGER"
-		},
 	{ ATF_NOFLAGS, 0, offsetof(struct value, choice.BOOLEAN),
 		.tag = (ASN_TAG_CLASS_UNIVERSAL | (1 << 2)),
 		.tag_mode = 0,
@@ -183,13 +174,22 @@ static asn_TYPE_member_t asn_MBR_value_3[] = {
 		0, 0, /* No default value */
 		.name = "BOOLEAN"
 		},
+	{ ATF_NOFLAGS, 0, offsetof(struct value, choice.INTEGER_1),
+		.tag = (ASN_TAG_CLASS_UNIVERSAL | (2 << 2)),
+		.tag_mode = 0,
+		.type = &asn_DEF_NativeInteger,
+		.type_selector = 0,
+		{ .oer_constraints = 0, .per_constraints = 0, .general_constraints = 0 },
+		0, 0, /* No default value */
+		.name = "INTEGER"
+		},
 };
-static const unsigned asn_MAP_value_to_canonical_3[] = { 2, 0, 1 };
-static const unsigned asn_MAP_value_from_canonical_3[] = { 1, 2, 0 };
+static const unsigned asn_MAP_value_to_canonical_3[] = { 1, 0, 2 };
+static const unsigned asn_MAP_value_from_canonical_3[] = { 1, 0, 2 };
 static const asn_TYPE_tag2member_t asn_MAP_value_tag2el_3[] = {
-    { (ASN_TAG_CLASS_UNIVERSAL | (1 << 2)), 2, 0, 0 }, /* BOOLEAN */
+    { (ASN_TAG_CLASS_UNIVERSAL | (1 << 2)), 1, 0, 0 }, /* BOOLEAN */
     { (ASN_TAG_CLASS_UNIVERSAL | (2 << 2)), 0, 0, 1 }, /* INTEGER */
-    { (ASN_TAG_CLASS_UNIVERSAL | (2 << 2)), 1, -1, 0 } /* INTEGER */
+    { (ASN_TAG_CLASS_UNIVERSAL | (2 << 2)), 2, -1, 0 } /* INTEGER */
 };
 static asn_CHOICE_specifics_t asn_SPC_value_specs_3 = {
 	sizeof(struct value),
