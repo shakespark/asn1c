@@ -1,0 +1,422 @@
+name: C/C++ CI
+
+# This workflow is adapted from the CI of Mouse's asn1c fork:
+#   https://github.com/mouse07410/asn1c/blob/vlm_master/.github/workflows/c-cpp.yml
+# Credit to mouse07410 for the overall job structure (gcc check +
+# distcheck + clang sanitizers running concurrently), the ccache
+# masquerade setup, and the failing-test-log reporting steps.
+# Local adaptations for this fork:
+#   * trigger branches renamed for this repository's layout
+#     (master + pull requests into it) and a weekly scheduled run
+#     added to catch runner-image/toolchain drift between pushes;
+#   * the fuzzer testsuite is opt-in (--enable-test-fuzzer) in this
+#     tree, so no --disable-test-fuzzer flag is needed;
+#   * no PKIX1 example codec step: it exercises codecs (e.g. CBOR)
+#     that only exist in Mouse's tree.
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  schedule:
+    # Weekly Monday 03:17 UTC: detect breakage caused by ubuntu-latest
+    # toolchain updates instead of blaming the next unrelated push.
+    - cron: '17 3 * * 1'
+  workflow_dispatch:
+
+# Cancel superseded runs of the same branch/PR instead of letting them
+# pile up and exhaust runner time.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Strategy (see the attribution note above):
+#  * Three independent jobs run concurrently:
+#      - build-and-check: gcc build + full `make check` (ASan/UBSan are
+#        enabled by default by configure).
+#      - distcheck: the full VPATH dist/build/check/install cycle;
+#        catches fixtures missing from EXTRA_DIST/Makefile.am that an
+#        in-tree `make check` cannot see.
+#      - clang-sanitizers: the same `make check` under clang, which adds
+#        clang-only sanitizers (nullability, unsigned-integer-overflow)
+#        on top of the gcc ASan/UBSan coverage.  Runs as a matrix of the
+#        distro-default clang (ubuntu-latest) and clang-14 (ubuntu-22.04):
+#        sanitizer diagnostics drift across clang versions (e.g. clang-14
+#        reports zero-offset-to-null under pointer-overflow where newer
+#        clang does not), so a single version silently loses coverage.
+#      - asn1tools-differential: UPER byte-level cross-check of asn1c
+#        against the independent asn1tools Python implementation over a
+#        small extension-focused corpus (.github/xdiff/).
+#      - smoke-fuzz: short LibFuzzer pass (FUZZ_TIME=1) over the
+#        randomized-test bundles closest to this fork's fix surface.
+#  * Every make invocation uses -j$(nproc).  The automake parallel test
+#    harness runs the per-directory TESTS concurrently as well.
+#  * ccache (masquerade via PATH) runs through actions/cache.  The test
+#    suite recompiles identical skeleton sources hundreds of times (once
+#    per generated test project), so ccache pays off massively even
+#    within a single run.
+
+jobs:
+  build-and-check:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+    - uses: actions/checkout@v5
+
+    - name: Set up ccache
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -y -qq ccache
+        mkdir -p "$HOME/ccache-bin"
+        for c in cc c++ gcc g++; do
+          ln -sf "$(command -v ccache)" "$HOME/ccache-bin/$c"
+        done
+        echo "$HOME/ccache-bin" >> "$GITHUB_PATH"
+        {
+          echo "CCACHE_DIR=$HOME/.ccache"
+          echo "CCACHE_BASEDIR=$GITHUB_WORKSPACE"
+          echo "CCACHE_NOHASHDIR=true"
+          echo "CCACHE_MAXSIZE=800M"
+        } >> "$GITHUB_ENV"
+
+    - name: Restore ccache
+      uses: actions/cache@v5
+      with:
+        path: ~/.ccache
+        key: ccache-gcc-check-${{ github.sha }}
+        restore-keys: |
+          ccache-gcc-check-
+          ccache-gcc-
+
+    - name: preconf
+      run: autoreconf -ivf
+
+    - name: configure
+      run: ./configure
+
+    - name: make
+      run: make -j"$(nproc)"
+
+    - name: make check
+      # Tests must fail visibly instead of consuming a runner indefinitely.
+      timeout-minutes: 45
+      run: make -j"$(nproc)" check
+
+    - name: ccache statistics
+      if: always()
+      run: ccache -s
+
+    - name: Print failing test logs to console
+      if: failure()
+      run: |
+        # Automake's test-suite.log embeds the full per-test log of every
+        # failed test.  Print them so failure details are readable directly
+        # in the CI console, without downloading the artifact.
+        find . -name 'test-suite.log' 2>/dev/null | while read -r f; do
+          if grep -q -E '^# +(FAIL|ERROR): +[1-9]' "$f"; then
+            echo "::group::${f}"
+            cat "$f"
+            echo "::endgroup::"
+          fi
+        done
+
+    - name: Upload test logs on failure
+      if: failure()
+      uses: actions/upload-artifact@v6
+      with:
+        name: check-test-logs
+        if-no-files-found: ignore
+        path: |
+          config.log
+          tests/**/test-suite.log
+          tests/**/*.log
+
+  distcheck:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+    - uses: actions/checkout@v5
+
+    - name: Set up ccache
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -y -qq ccache
+        mkdir -p "$HOME/ccache-bin"
+        for c in cc c++ gcc g++; do
+          ln -sf "$(command -v ccache)" "$HOME/ccache-bin/$c"
+        done
+        echo "$HOME/ccache-bin" >> "$GITHUB_PATH"
+        {
+          echo "CCACHE_DIR=$HOME/.ccache"
+          echo "CCACHE_BASEDIR=$GITHUB_WORKSPACE"
+          echo "CCACHE_NOHASHDIR=true"
+          echo "CCACHE_MAXSIZE=800M"
+        } >> "$GITHUB_ENV"
+
+    - name: Restore ccache
+      uses: actions/cache@v5
+      with:
+        path: ~/.ccache
+        key: ccache-gcc-distcheck-${{ github.sha }}
+        restore-keys: |
+          ccache-gcc-distcheck-
+          ccache-gcc-
+
+    - name: preconf
+      run: autoreconf -ivf
+
+    - name: configure
+      run: ./configure
+
+    - name: make distcheck
+      timeout-minutes: 45
+      run: make -j"$(nproc)" distcheck
+
+    - name: ccache statistics
+      if: always()
+      run: ccache -s
+
+    - name: Print failing test logs to console
+      if: failure()
+      run: |
+        find . -name 'test-suite.log' 2>/dev/null | while read -r f; do
+          if grep -q -E '^# +(FAIL|ERROR): +[1-9]' "$f"; then
+            echo "::group::${f}"
+            cat "$f"
+            echo "::endgroup::"
+          fi
+        done
+
+    - name: Upload test logs on failure
+      if: failure()
+      uses: actions/upload-artifact@v6
+      with:
+        name: distcheck-test-logs
+        if-no-files-found: ignore
+        path: |
+          config.log
+          asn1c-*/_build/**/test-suite.log
+          asn1c-*/_build/**/tests/**/*.log
+
+  clang-sanitizers:
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Distro-default clang on the current runner image.
+          - runner: ubuntu-latest
+            clangver: ""
+          # Oldest clang still easy to install from a distro archive:
+          # its UBSan reports zero-offset-to-null under pointer-overflow,
+          # which newer clang no longer diagnoses.  ubuntu-24.04 dropped
+          # the clang-14 package, hence the older runner image.
+          - runner: ubuntu-22.04
+            clangver: "-14"
+    name: clang-sanitizers (clang${{ matrix.clangver }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 50
+    steps:
+    - uses: actions/checkout@v5
+
+    - name: Set up ccache and clang
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -y -qq ccache clang${{ matrix.clangver }}
+        mkdir -p "$HOME/ccache-bin"
+        for c in cc c++ gcc g++ clang clang++ \
+                 clang${{ matrix.clangver }} clang++${{ matrix.clangver }}; do
+          ln -sf "$(command -v ccache)" "$HOME/ccache-bin/$c"
+        done
+        echo "$HOME/ccache-bin" >> "$GITHUB_PATH"
+        {
+          echo "CCACHE_DIR=$HOME/.ccache"
+          echo "CCACHE_BASEDIR=$GITHUB_WORKSPACE"
+          echo "CCACHE_NOHASHDIR=true"
+          echo "CCACHE_MAXSIZE=800M"
+        } >> "$GITHUB_ENV"
+
+    - name: Restore ccache
+      uses: actions/cache@v5
+      with:
+        path: ~/.ccache
+        key: ccache-clang${{ matrix.clangver }}-check-${{ github.sha }}
+        restore-keys: |
+          ccache-clang${{ matrix.clangver }}-check-
+
+    - name: preconf
+      run: autoreconf -ivf
+
+    - name: configure
+      # clang enables additional UBSan checks the gcc job cannot:
+      # -fsanitize=nullability and -fsanitize=unsigned-integer-overflow
+      # (auto-detected by configure), on top of ASan/UBSan.
+      run: ./configure CC=clang${{ matrix.clangver }} CXX=clang++${{ matrix.clangver }}
+
+    - name: make
+      run: make -j"$(nproc)"
+
+    - name: make check
+      timeout-minutes: 45
+      run: make -j"$(nproc)" check
+
+    - name: ccache statistics
+      if: always()
+      run: ccache -s
+
+    - name: Print failing test logs to console
+      if: failure()
+      run: |
+        find . -name 'test-suite.log' 2>/dev/null | while read -r f; do
+          if grep -q -E '^# +(FAIL|ERROR): +[1-9]' "$f"; then
+            echo "::group::${f}"
+            cat "$f"
+            echo "::endgroup::"
+          fi
+        done
+
+    - name: Upload test logs on failure
+      if: failure()
+      uses: actions/upload-artifact@v6
+      with:
+        name: clang${{ matrix.clangver }}-check-test-logs
+        if-no-files-found: ignore
+        path: |
+          config.log
+          tests/**/test-suite.log
+          tests/**/*.log
+
+  asn1tools-differential:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@v5
+
+    - name: Set up ccache
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -y -qq ccache
+        mkdir -p "$HOME/ccache-bin"
+        for c in cc c++ gcc g++; do
+          ln -sf "$(command -v ccache)" "$HOME/ccache-bin/$c"
+        done
+        echo "$HOME/ccache-bin" >> "$GITHUB_PATH"
+        {
+          echo "CCACHE_DIR=$HOME/.ccache"
+          echo "CCACHE_BASEDIR=$GITHUB_WORKSPACE"
+          echo "CCACHE_NOHASHDIR=true"
+          echo "CCACHE_MAXSIZE=800M"
+        } >> "$GITHUB_ENV"
+
+    - name: Restore ccache
+      uses: actions/cache@v5
+      with:
+        path: ~/.ccache
+        key: ccache-gcc-xdiff-${{ github.sha }}
+        restore-keys: |
+          ccache-gcc-xdiff-
+          ccache-gcc-
+
+    - name: preconf
+      run: autoreconf -ivf
+
+    - name: configure
+      run: ./configure
+
+    - name: make
+      run: make -j"$(nproc)"
+
+    - name: Install asn1tools
+      # --break-system-packages: the runner's Debian-style python is
+      # PEP 668 externally-managed; a --user install of a pure-python
+      # package is safe there.
+      run: python3 -m pip install --user --break-system-packages asn1tools
+
+    - name: UPER differential vs asn1tools
+      # Encodes an extension-focused corpus with the independent
+      # asn1tools implementation and relays it through the generated
+      # converter (-iper -oper); any byte disagreement fails.
+      run: python3 .github/xdiff/xdiff.py
+
+  smoke-fuzz:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+    - uses: actions/checkout@v5
+
+    - name: Set up ccache and clang
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -y -qq ccache clang
+        mkdir -p "$HOME/ccache-bin"
+        for c in cc c++ gcc g++ clang clang++; do
+          ln -sf "$(command -v ccache)" "$HOME/ccache-bin/$c"
+        done
+        echo "$HOME/ccache-bin" >> "$GITHUB_PATH"
+        {
+          echo "CCACHE_DIR=$HOME/.ccache"
+          echo "CCACHE_BASEDIR=$GITHUB_WORKSPACE"
+          echo "CCACHE_NOHASHDIR=true"
+          echo "CCACHE_MAXSIZE=800M"
+        } >> "$GITHUB_ENV"
+
+    - name: Restore ccache
+      uses: actions/cache@v5
+      with:
+        path: ~/.ccache
+        key: ccache-clang-fuzz-${{ github.sha }}
+        restore-keys: |
+          ccache-clang-fuzz-
+
+    - name: preconf
+      run: autoreconf -ivf
+
+    - name: configure
+      run: ./configure --enable-test-fuzzer CC=clang CXX=clang++
+
+    - name: make
+      run: make -j"$(nproc)"
+
+    - name: smoke fuzz (extension-surface bundles, FUZZ_TIME=1)
+      # Short LibFuzzer pass over the randomized bundles closest to this
+      # fork's fix surface; each mode fuzzes for 1s on top of its normal
+      # round-trip test.  Full-corpus fuzzing stays opt-in / local.
+      timeout-minutes: 45
+      run: |
+        make -C tests/tests-randomized -j"$(nproc)" check FUZZ_TIME=1 \
+          TESTS="bundles/03-ENUMERATED-bundle.txt \
+                 bundles/05-BIT-STRING-bundle.txt \
+                 bundles/15-CHOICE-bundle.txt \
+                 bundles/16-SEQUENCE-bundle.txt"
+
+    - name: Print failing test logs to console
+      if: failure()
+      run: |
+        find . -name 'test-suite.log' 2>/dev/null | while read -r f; do
+          if grep -q -E '^# +(FAIL|ERROR): +[1-9]' "$f"; then
+            echo "::group::${f}"
+            cat "$f"
+            echo "::endgroup::"
+          fi
+        done
+
+    - name: Upload test logs on failure
+      if: failure()
+      uses: actions/upload-artifact@v6
+      with:
+        name: smoke-fuzz-test-logs
+        if-no-files-found: ignore
+        path: |
+          config.log
+          tests/**/test-suite.log
+          tests/**/*.log
