@@ -1,0 +1,45 @@
+-- OK: Everything is fine
+
+-- Regression test for review-flagged index misalignment between the
+-- presence enum, the union members, the asn_TYPE_member_t table and the
+-- tag2el map of a table-constrained open type CHOICE, when an Information
+-- Object Set repeats the same anonymous &Type across non-adjacent rows.
+--
+-- Minimal repro: { INTEGER IDENTIFIED BY 1 } | { INTEGER IDENTIFIED BY 2 }
+-- | { BOOLEAN IDENTIFIED BY 3 }. Before the suffix-based fix, the presence
+-- enum alone skipped the second INTEGER (leaving just value_PR_INTEGER,
+-- value_PR_BOOLEAN), while the member table, tag2el map and the runtime
+-- row selector still counted all three rows: decoding id=2 picked
+-- present=2 (BOOLEAN's enumerator by position) while the actual bytes
+-- were the second INTEGER, and id=3 had no valid enumerator at all. The
+-- runtime encode/decode assertions for ids 1/2/3 are documented in this
+-- commit's message (the tests-c-compiler harness currently aborts on any
+-- CLASS/IOC schema, so they are not registered there).
+
+-- iso.org.dod.internet.private.enterprise (1.3.6.1.4.1)
+-- .spelio.software.asn1c.test (9363.1.5.1)
+-- .178
+
+ModuleInterleavedDuplicateIOS
+	{ iso org(3) dod(6) internet (1) private(4) enterprise(1)
+		spelio(9363) software(1) asn1c(5) test(1) 178 }
+	DEFINITIONS AUTOMATIC TAGS ::=
+BEGIN
+
+    P ::= CLASS {
+        &id    INTEGER (0..255) UNIQUE,
+        &Type
+    } WITH SYNTAX { &Type IDENTIFIED BY &id }
+
+    Objs P ::= {
+        { INTEGER IDENTIFIED BY 1 } |
+        { INTEGER IDENTIFIED BY 2 } |
+        { BOOLEAN IDENTIFIED BY 3 }
+    }
+
+    T ::= SEQUENCE {
+        id     P.&id({Objs}),
+        value  P.&Type({Objs}{@id})
+    }
+
+END
