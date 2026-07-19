@@ -1099,6 +1099,23 @@ asn1c_lang_C_OpenType(arg_t *arg, asn1c_ioc_table_and_objset_t *opt_ioc,
     open_type_choice->_type_unique_index = arg->expr->_type_unique_index;
     open_type_choice->parent_expr = arg->expr->parent_expr;
 
+    /*
+     * Track the final, C-safe identifiers already claimed in this
+     * OPEN TYPE CHOICE, not the raw ASN.1 Identifier strings. Two
+     * distinct ASN.1 names can normalize to the same C identifier
+     * (asn1c_make_identifier() turns '-' into '_'), e.g. a set
+     * contributing both 'Foo' and 'Foo-1' as bare &Type values --
+     * or, after a first collision is suffixed to 'Foo_1', a *third*
+     * 'Foo-1' arriving and colliding with that already-suffixed name.
+     * Counting occurrences of the raw Identifier (as a prior version of
+     * this fix did) misses both: dedup by the actual printed name, and
+     * keep trying larger suffixes until one is free.
+     */
+    size_t used_count = 0;
+    char **used_names = opt_ioc->ioct->rows
+        ? calloc(opt_ioc->ioct->rows, sizeof(*used_names))
+        : NULL;
+
     for(size_t row = 0; row < opt_ioc->ioct->rows; row++) {
         struct asn1p_ioc_cell_s *cell =
             &opt_ioc->ioct->row[row]->column[column_index];
@@ -1107,14 +1124,34 @@ asn1c_lang_C_OpenType(arg_t *arg, asn1c_ioc_table_and_objset_t *opt_ioc,
 
         asn1p_expr_t *m = asn1p_expr_clone(cell->value, 0);
 
-        int n = asn1p_lookup_child_count_by_name(open_type_choice, cell->value->Identifier);
-        if (n) {
-            m->spec_index = n;
-            m->_lineno = -1;
+        for(int n = 0; ; n++) {
+            if(n == 0) {
+                m->spec_index = -1;
+                m->_lineno = 0;
+            } else {
+                m->spec_index = n;
+                m->_lineno = -1;
+            }
+
+            const char *candidate = asn1c_make_identifier(0, m, 0);
+            size_t i;
+            for(i = 0; i < used_count; i++) {
+                if(strcmp(used_names[i], candidate) == 0)
+                    break;
+            }
+            if(i == used_count) {
+                used_names[used_count++] = strdup(candidate);
+                break;
+            }
         }
 
         asn1p_expr_add(open_type_choice, m);
     }
+
+    for(size_t i = 0; i < used_count; i++) {
+        free(used_names[i]);
+    }
+    free(used_names);
 
     tmp_arg.expr = open_type_choice;
     GEN_INCLUDE_STD("OPEN_TYPE");
