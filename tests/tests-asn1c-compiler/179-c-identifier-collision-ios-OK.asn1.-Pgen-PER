@@ -1,0 +1,369 @@
+
+/*** <<< INCLUDES [Foo] >>> ***/
+
+#include <NativeInteger.h>
+
+/*** <<< TYPE-DECLS [Foo] >>> ***/
+
+typedef long	 Foo_t;
+
+/*** <<< FUNC-DECLS [Foo] >>> ***/
+
+extern asn_TYPE_descriptor_t asn_DEF_Foo;
+asn_struct_free_f Foo_free;
+asn_struct_print_f Foo_print;
+asn_constr_check_f Foo_constraint;
+ber_type_decoder_f Foo_decode_ber;
+der_type_encoder_f Foo_encode_der;
+xer_type_decoder_f Foo_decode_xer;
+xer_type_encoder_f Foo_encode_xer;
+per_type_decoder_f Foo_decode_uper;
+per_type_encoder_f Foo_encode_uper;
+
+/*** <<< CODE [Foo] >>> ***/
+
+/*
+ * This type is implemented using NativeInteger,
+ * so here we adjust the DEF accordingly.
+ */
+
+/*** <<< STAT-DEFS [Foo] >>> ***/
+
+static const ber_tlv_tag_t asn_DEF_Foo_tags_1[] = {
+	(ASN_TAG_CLASS_UNIVERSAL | (2 << 2))
+};
+asn_TYPE_descriptor_t asn_DEF_Foo = {
+	"Foo",
+	"Foo",
+	&asn_OP_NativeInteger,
+	asn_DEF_Foo_tags_1,
+	sizeof(asn_DEF_Foo_tags_1)
+		/sizeof(asn_DEF_Foo_tags_1[0]), /* 1 */
+	asn_DEF_Foo_tags_1,	/* Same as above */
+	sizeof(asn_DEF_Foo_tags_1)
+		/sizeof(asn_DEF_Foo_tags_1[0]), /* 1 */
+	{ 0, 0, NativeInteger_constraint },
+	0, 0,	/* No members */
+	0	/* No specifics */
+};
+
+
+/*** <<< INCLUDES [Foo-1] >>> ***/
+
+#include <BOOLEAN.h>
+
+/*** <<< TYPE-DECLS [Foo-1] >>> ***/
+
+typedef BOOLEAN_t	 Foo_1_t;
+
+/*** <<< FUNC-DECLS [Foo-1] >>> ***/
+
+extern asn_TYPE_descriptor_t asn_DEF_Foo_1;
+asn_struct_free_f Foo_1_free;
+asn_struct_print_f Foo_1_print;
+asn_constr_check_f Foo_1_constraint;
+ber_type_decoder_f Foo_1_decode_ber;
+der_type_encoder_f Foo_1_encode_der;
+xer_type_decoder_f Foo_1_decode_xer;
+xer_type_encoder_f Foo_1_encode_xer;
+per_type_decoder_f Foo_1_decode_uper;
+per_type_encoder_f Foo_1_encode_uper;
+
+/*** <<< CODE [Foo-1] >>> ***/
+
+/*
+ * This type is implemented using BOOLEAN,
+ * so here we adjust the DEF accordingly.
+ */
+
+/*** <<< STAT-DEFS [Foo-1] >>> ***/
+
+static const ber_tlv_tag_t asn_DEF_Foo_1_tags_1[] = {
+	(ASN_TAG_CLASS_UNIVERSAL | (1 << 2))
+};
+asn_TYPE_descriptor_t asn_DEF_Foo_1 = {
+	"Foo-1",
+	"Foo-1",
+	&asn_OP_BOOLEAN,
+	asn_DEF_Foo_1_tags_1,
+	sizeof(asn_DEF_Foo_1_tags_1)
+		/sizeof(asn_DEF_Foo_1_tags_1[0]), /* 1 */
+	asn_DEF_Foo_1_tags_1,	/* Same as above */
+	sizeof(asn_DEF_Foo_1_tags_1)
+		/sizeof(asn_DEF_Foo_1_tags_1[0]), /* 1 */
+	{ 0, 0, BOOLEAN_constraint },
+	0, 0,	/* No members */
+	0	/* No specifics */
+};
+
+
+/*** <<< INCLUDES [T] >>> ***/
+
+#include <NativeInteger.h>
+#include <ANY.h>
+#include <asn_ioc.h>
+#include "Foo.h"
+#include "Foo-1.h"
+#include <OPEN_TYPE.h>
+#include <constr_CHOICE.h>
+#include <constr_SEQUENCE.h>
+
+/*** <<< DEPS [T] >>> ***/
+
+typedef enum value_PR {
+	value_PR_NOTHING,	/* No components present */
+	value_PR_Foo,
+	value_PR_Foo_1,
+	value_PR_Foo_1_1
+} value_PR;
+
+/*** <<< TYPE-DECLS [T] >>> ***/
+
+typedef struct T {
+	long	 id;
+	struct value {
+		value_PR present;
+		union T__value_u {
+			Foo_t	 Foo;
+			Foo_t	 Foo_1;
+			Foo_1_t	 Foo_1_1;
+		} choice;
+		
+		/* Context for parsing across buffer boundaries */
+		asn_struct_ctx_t _asn_ctx;
+	} value;
+	
+	/* Context for parsing across buffer boundaries */
+	asn_struct_ctx_t _asn_ctx;
+} T_t;
+
+/*** <<< FUNC-DECLS [T] >>> ***/
+
+extern asn_TYPE_descriptor_t asn_DEF_T;
+
+/*** <<< IOC-TABLES [T] >>> ***/
+
+static const long asn_VAL_1_1 = 1;
+static const long asn_VAL_2_2 = 2;
+static const long asn_VAL_3_3 = 3;
+static const asn_ioc_cell_t asn_IOS_Objs_1_rows[] = {
+	{ "&id", aioc__value, &asn_DEF_NativeInteger, &asn_VAL_1_1 },
+	{ "&Type", aioc__type, &asn_DEF_Foo },
+	{ "&id", aioc__value, &asn_DEF_NativeInteger, &asn_VAL_2_2 },
+	{ "&Type", aioc__type, &asn_DEF_Foo },
+	{ "&id", aioc__value, &asn_DEF_NativeInteger, &asn_VAL_3_3 },
+	{ "&Type", aioc__type, &asn_DEF_Foo_1 }
+};
+static const asn_ioc_set_t asn_IOS_Objs_1[] = {
+	3, 2, asn_IOS_Objs_1_rows
+};
+
+/*** <<< CODE [T] >>> ***/
+
+static int
+memb_id_constraint_1(const asn_TYPE_descriptor_t *td, const void *sptr,
+			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
+	long value;
+	
+	if(!sptr) {
+		ASN__CTFAIL(app_key, td, sptr,
+			"%s: value not given (%s:%d)",
+			td->name, __FILE__, __LINE__);
+		return -1;
+	}
+	
+	value = *(const long *)sptr;
+	
+	if((value >= 0 && value <= 255)) {
+		/* Constraint check succeeded */
+		return 0;
+	} else {
+		ASN__CTFAIL(app_key, td, sptr,
+			"%s: constraint failed (%s:%d)",
+			td->name, __FILE__, __LINE__);
+		return -1;
+	}
+}
+
+static asn_type_selector_result_t
+select_T_value_type(const asn_TYPE_descriptor_t *parent_type, const void *parent_sptr) {
+	asn_type_selector_result_t result = {0, 0};
+	const asn_ioc_set_t *itable = asn_IOS_Objs_1;
+	size_t constraining_column = 0; /* &id */
+	size_t for_column = 1; /* &Type */
+	size_t row;
+	size_t presence_index = 0;
+	const long *constraining_value = (const long *)((const char *)parent_sptr + offsetof(struct T, id));
+	
+	for(row=0; row < itable->rows_count; row++) {
+	    const asn_ioc_cell_t *constraining_cell = &itable->rows[row * itable->columns_count + constraining_column];
+	    const asn_ioc_cell_t *type_cell = &itable->rows[row * itable->columns_count + for_column];
+	
+	    /*
+	     * The CHOICE which carries the open type value only contains the
+	     * rows which actually define a type for this column, so count those
+	     * rows to derive the CHOICE presence index. A row which selects no
+	     * type leaves both result fields cleared, which the decoders treat
+	     * as a decode failure.
+	     */
+	    if(type_cell->type_descriptor) presence_index++;
+	    if(constraining_cell->type_descriptor->op->compare_struct(constraining_cell->type_descriptor, constraining_value, constraining_cell->value_sptr) == 0) {
+	        if(type_cell->type_descriptor) {
+	            result.type_descriptor = type_cell->type_descriptor;
+	            result.presence_index = presence_index;
+	        }
+	        break;
+	    }
+	}
+	
+	return result;
+}
+
+static int
+memb_value_constraint_1(const asn_TYPE_descriptor_t *td, const void *sptr,
+			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
+	
+	if(!sptr) {
+		ASN__CTFAIL(app_key, td, sptr,
+			"%s: value not given (%s:%d)",
+			td->name, __FILE__, __LINE__);
+		return -1;
+	}
+	
+	
+	if(1 /* No applicable constraints whatsoever */) {
+		/* Nothing is here. See below */
+	}
+	
+	return td->encoding_constraints.general_constraints(td, sptr, ctfailcb, app_key);
+}
+
+
+/*** <<< CTDEFS [T] >>> ***/
+
+static asn_per_constraints_t asn_PER_memb_id_constr_2 CC_NOTUSED = {
+	{ APC_CONSTRAINED,	 8,  8,  0,  255 }	/* (0..255) */,
+	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
+	0, 0	/* No PER value map */
+};
+static asn_per_constraints_t asn_PER_memb_value_constr_3 CC_NOTUSED = {
+	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
+	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
+	0, 0	/* No PER value map */
+};
+
+/*** <<< STAT-DEFS [T] >>> ***/
+
+static asn_TYPE_member_t asn_MBR_value_3[] = {
+	{ ATF_NOFLAGS, 0, offsetof(struct value, choice.Foo),
+		.tag = (ASN_TAG_CLASS_UNIVERSAL | (2 << 2)),
+		.tag_mode = 0,
+		.type = &asn_DEF_Foo,
+		.type_selector = 0,
+		{ .oer_constraints = 0, .per_constraints = 0, .general_constraints = 0 },
+		0, 0, /* No default value */
+		.name = "Foo"
+		},
+	{ ATF_NOFLAGS, 0, offsetof(struct value, choice.Foo_1),
+		.tag = (ASN_TAG_CLASS_UNIVERSAL | (2 << 2)),
+		.tag_mode = 0,
+		.type = &asn_DEF_Foo,
+		.type_selector = 0,
+		{ .oer_constraints = 0, .per_constraints = 0, .general_constraints = 0 },
+		0, 0, /* No default value */
+		.name = "Foo"
+		},
+	{ ATF_NOFLAGS, 0, offsetof(struct value, choice.Foo_1_1),
+		.tag = (ASN_TAG_CLASS_UNIVERSAL | (1 << 2)),
+		.tag_mode = 0,
+		.type = &asn_DEF_Foo_1,
+		.type_selector = 0,
+		{ .oer_constraints = 0, .per_constraints = 0, .general_constraints = 0 },
+		0, 0, /* No default value */
+		.name = "Foo-1"
+		},
+};
+static const unsigned asn_MAP_value_to_canonical_3[] = { 2, 0, 1 };
+static const unsigned asn_MAP_value_from_canonical_3[] = { 1, 2, 0 };
+static const asn_TYPE_tag2member_t asn_MAP_value_tag2el_3[] = {
+    { (ASN_TAG_CLASS_UNIVERSAL | (1 << 2)), 2, 0, 0 }, /* Foo-1 */
+    { (ASN_TAG_CLASS_UNIVERSAL | (2 << 2)), 0, 0, 1 }, /* Foo */
+    { (ASN_TAG_CLASS_UNIVERSAL | (2 << 2)), 1, -1, 0 } /* Foo */
+};
+static asn_CHOICE_specifics_t asn_SPC_value_specs_3 = {
+	sizeof(struct value),
+	offsetof(struct value, _asn_ctx),
+	offsetof(struct value, present),
+	sizeof(((struct value *)0)->present),
+	.tag2el = asn_MAP_value_tag2el_3,
+	.tag2el_count = 3,	/* Count of tags in the map */
+	.to_canonical_order = asn_MAP_value_to_canonical_3,
+	.from_canonical_order = asn_MAP_value_from_canonical_3,
+	.first_extension = -1	/* Extensions start */
+};
+static /* Use -fall-defs-global to expose */
+asn_TYPE_descriptor_t asn_DEF_value_3 = {
+	"value",
+	"value",
+	&asn_OP_OPEN_TYPE,
+	0,	/* No effective tags (pointer) */
+	0,	/* No effective tags (count) */
+	0,	/* No tags (pointer) */
+	0,	/* No tags (count) */
+	{ 0, 0, OPEN_TYPE_constraint },
+	asn_MBR_value_3,
+	3,	/* Elements count */
+	&asn_SPC_value_specs_3	/* Additional specs */
+};
+
+static asn_TYPE_member_t asn_MBR_T_1[] = {
+	{ ATF_NOFLAGS, 0, offsetof(struct T, id),
+		.tag = (ASN_TAG_CLASS_CONTEXT | (0 << 2)),
+		.tag_mode = -1,	/* IMPLICIT tag at current level */
+		.type = &asn_DEF_NativeInteger,
+		.type_selector = 0,
+		{ .oer_constraints = 0, .per_constraints = &asn_PER_memb_id_constr_2, .general_constraints =  memb_id_constraint_1 },
+		0, 0, /* No default value */
+		.name = "id"
+		},
+	{ ATF_OPEN_TYPE | ATF_NOFLAGS, 0, offsetof(struct T, value),
+		.tag = (ASN_TAG_CLASS_CONTEXT | (1 << 2)),
+		.tag_mode = +1,	/* EXPLICIT tag at current level */
+		.type = &asn_DEF_value_3,
+		.type_selector = select_T_value_type,
+		{ .oer_constraints = 0, .per_constraints = &asn_PER_memb_value_constr_3, .general_constraints =  memb_value_constraint_1 },
+		0, 0, /* No default value */
+		.name = "value"
+		},
+};
+static const ber_tlv_tag_t asn_DEF_T_tags_1[] = {
+	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
+};
+static const asn_TYPE_tag2member_t asn_MAP_T_tag2el_1[] = {
+    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* id */
+    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 } /* value */
+};
+static asn_SEQUENCE_specifics_t asn_SPC_T_specs_1 = {
+	sizeof(struct T),
+	offsetof(struct T, _asn_ctx),
+	.tag2el = asn_MAP_T_tag2el_1,
+	.tag2el_count = 2,	/* Count of tags in the map */
+	0, 0, 0,	/* Optional elements (not needed) */
+	-1,	/* First extension addition */
+};
+asn_TYPE_descriptor_t asn_DEF_T = {
+	"T",
+	"T",
+	&asn_OP_SEQUENCE,
+	asn_DEF_T_tags_1,
+	sizeof(asn_DEF_T_tags_1)
+		/sizeof(asn_DEF_T_tags_1[0]), /* 1 */
+	asn_DEF_T_tags_1,	/* Same as above */
+	sizeof(asn_DEF_T_tags_1)
+		/sizeof(asn_DEF_T_tags_1[0]), /* 1 */
+	{ 0, 0, SEQUENCE_constraint },
+	asn_MBR_T_1,
+	2,	/* Elements count */
+	&asn_SPC_T_specs_1	/* Additional specs */
+};
+
