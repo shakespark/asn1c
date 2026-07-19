@@ -13,9 +13,7 @@
 -- row selector still counted all three rows: decoding id=3 (the second
 -- INTEGER row) picked present=3, an enumerator the truncated 2-entry enum
 -- did not even have. The runtime encode/decode assertions for ids 1/2/3
--- are documented in this commit's message (the tests-c-compiler harness
--- currently aborts on any CLASS/IOC schema, so they are not registered
--- there).
+-- are registered as tests/tests-c-compiler/check-src/check-178.c.
 
 -- iso.org.dod.internet.private.enterprise (1.3.6.1.4.1)
 -- .spelio.software.asn1c.test (9363.1.5.1)
