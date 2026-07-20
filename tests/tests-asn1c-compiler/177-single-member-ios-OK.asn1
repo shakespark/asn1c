@@ -1,0 +1,40 @@
+-- OK: Everything is fine
+
+-- iso.org.dod.internet.private.enterprise (1.3.6.1.4.1)
+-- .spelio.software.asn1c.test (9363.1.5.1)
+-- .177
+
+ModuleSingleMemberIOS
+	{ iso org(3) dod(6) internet (1) private(4) enterprise(1)
+		spelio(9363) software(1) asn1c(5) test(1) 177 }
+	DEFINITIONS ::=
+BEGIN
+
+    -- Regression test for a single-member Information Object Set.
+    -- Before the fix, asn1fix_cws.c's _asn1f_foreach_unparsed() silently
+    -- discarded a lone (non-unioned) object without ever registering it
+    -- in the object set's IOC row table, producing an empty asn_ioc_set_t
+    -- and a CHOICE with zero alternatives: a field that can never carry
+    -- a value. Two or more members (joined by the pipe operator) are fine.
+
+    Payload ::= SEQUENCE {
+        a INTEGER (0..127),
+        b BOOLEAN
+    }
+
+    FRAME-TYPE ::= CLASS {
+        &id     INTEGER (0..127) UNIQUE,
+        &Type
+    } WITH SYNTAX { &Type IDENTIFIED BY &id }
+
+    FrameTypes FRAME-TYPE ::= {
+        { Payload IDENTIFIED BY 1 }
+    }
+
+    Frame ::= SEQUENCE {
+        ident   FRAME-TYPE.&id({FrameTypes}),
+        value   FRAME-TYPE.&Type({FrameTypes}{@ident}),
+        ...
+    }
+
+END

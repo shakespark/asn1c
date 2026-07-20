@@ -1099,6 +1099,25 @@ asn1c_lang_C_OpenType(arg_t *arg, asn1c_ioc_table_and_objset_t *opt_ioc,
     open_type_choice->_type_unique_index = arg->expr->_type_unique_index;
     open_type_choice->parent_expr = arg->expr->parent_expr;
 
+    /*
+     * Track the final, C-safe identifiers already claimed in this
+     * OPEN TYPE CHOICE, not the raw ASN.1 Identifier strings. Two
+     * distinct ASN.1 names can normalize to the same C identifier
+     * (asn1c_make_identifier() turns '-' into '_'), e.g. a set
+     * contributing both 'Foo' and 'Foo-1' as bare &Type values --
+     * or, after a first collision is suffixed to 'Foo_1', a *third*
+     * 'Foo-1' arriving and colliding with that already-suffixed name.
+     * Counting occurrences of the raw Identifier (as a prior version of
+     * this fix did) misses both: dedup by the actual printed name, and
+     * keep trying larger suffixes until one is free.
+     */
+    size_t used_count = 0;
+    char **used_names = calloc(opt_ioc->ioct->rows, sizeof(*used_names));
+    if(opt_ioc->ioct->rows && !used_names) {
+        FATAL("Out of memory generating OPEN TYPE %s", column_name);
+        return -1;
+    }
+
     for(size_t row = 0; row < opt_ioc->ioct->rows; row++) {
         struct asn1p_ioc_cell_s *cell =
             &opt_ioc->ioct->row[row]->column[column_index];
@@ -1106,10 +1125,64 @@ asn1c_lang_C_OpenType(arg_t *arg, asn1c_ioc_table_and_objset_t *opt_ioc,
         if(!cell->value) continue;
 
         asn1p_expr_t *m = asn1p_expr_clone(cell->value, 0);
-        if (asn1p_lookup_child(open_type_choice, m->Identifier))
-            m->_mark |= TM_SKIPinUNION;
+        int orig_spec_index = m->spec_index;
+        int orig_lineno = m->_lineno;
+
+        for(int n = 0; ; n++) {
+            if(n == 0) {
+                /*
+                 * Leave the clone's own spec_index/_lineno untouched on
+                 * the first attempt: cell->value may itself be a
+                 * parameterized instance carrying real values that
+                 * asn1c_make_identifier() renders as "%dP%d" (e.g. a
+                 * named parameterized-type alias). Only a real
+                 * collision should force the plain numeric "_n" suffix
+                 * this function adds for n >= 1.
+                 */
+                m->spec_index = orig_spec_index;
+                m->_lineno = orig_lineno;
+            } else {
+                m->spec_index = n;
+                m->_lineno = -1;
+            }
+
+            /*
+             * AMI_CHECK_RESERVED matches MKID_safe(), which is what
+             * asn1c_lang_C_type_SIMPLE_TYPE() actually uses to print
+             * this member's field name in the union (asn1c_C.c, union
+             * member emission). Deduping with plain flags (as
+             * c_presence_name() uses for the enum, which is always
+             * prefixed with "value_PR_" and so can never itself equal
+             * a bare reserved word) would let a name collision specific
+             * to the union's reserved-keyword mangling slip through.
+             */
+            const char *candidate =
+                asn1c_make_identifier(AMI_CHECK_RESERVED, m, 0);
+            size_t i;
+            for(i = 0; i < used_count; i++) {
+                if(strcmp(used_names[i], candidate) == 0)
+                    break;
+            }
+            if(i == used_count) {
+                char *dup = strdup(candidate);
+                if(!dup) {
+                    FATAL("Out of memory generating OPEN TYPE %s", column_name);
+                    for(size_t j = 0; j < used_count; j++) free(used_names[j]);
+                    free(used_names);
+                    return -1;
+                }
+                used_names[used_count++] = dup;
+                break;
+            }
+        }
+
         asn1p_expr_add(open_type_choice, m);
     }
+
+    for(size_t i = 0; i < used_count; i++) {
+        free(used_names[i]);
+    }
+    free(used_names);
 
     tmp_arg.expr = open_type_choice;
     GEN_INCLUDE_STD("OPEN_TYPE");

@@ -225,7 +225,12 @@ emit_ioc_cell(arg_t *arg, struct asn1p_ioc_cell_s *cell) {
     } else if(cell->value->meta_type == AMT_TYPEREF) {
         GEN_INCLUDE(asn1c_type_name(arg, cell->value, TNF_INCLUDE));
         OUT("aioc__type, &asn_DEF_%s", MKID(cell->value));
+    } else if(cell->value->meta_type == AMT_TYPE) {
+        GEN_INCLUDE(asn1c_type_name(arg, cell->value, TNF_INCLUDE));
+        OUT("aioc__type, &asn_DEF_%s", asn1c_type_name(arg, cell->value, TNF_SAFE));
     } else {
+        FATAL("Unsupported value meta-type %d for &%s",
+              cell->value->meta_type, cell->field->Identifier);
         return -1;
     }
 
@@ -271,7 +276,9 @@ emit_ioc_table(arg_t *arg, asn1p_expr_t *context, asn1c_ioc_table_and_objset_t i
         }
         for(size_t cn = 0; cn < row->columns; cn++) {
             if(rn || cn) OUT(",\n");
-            emit_ioc_cell(arg, &row->column[cn]);
+            if(emit_ioc_cell(arg, &row->column[cn])) {
+                return -1;
+            }
         }
     }
     OUT("\n");

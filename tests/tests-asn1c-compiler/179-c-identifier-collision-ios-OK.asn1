@@ -1,0 +1,41 @@
+-- OK: Everything is fine
+
+-- Regression for a review-flagged gap in the suffix-based OPEN TYPE
+-- dedup fix: it counted collisions by the raw ASN.1 Identifier string,
+-- not by the final, normalized C identifier asn1c_make_identifier()
+-- actually prints (which turns '-' into '_'). Two distinct ASN.1 names
+-- can normalize to the same C name: 'Foo' used twice, plus a named type
+-- 'Foo-1', and a naive count-by-raw-name dedup lets the third one
+-- collide with the second one's already-suffixed 'Foo_1' instead of
+-- getting a name of its own.
+
+-- iso.org.dod.internet.private.enterprise (1.3.6.1.4.1)
+-- .spelio.software.asn1c.test (9363.1.5.1)
+-- .179
+
+ModuleCIdentifierCollisionIOS
+	{ iso org(3) dod(6) internet (1) private(4) enterprise(1)
+		spelio(9363) software(1) asn1c(5) test(1) 179 }
+	DEFINITIONS AUTOMATIC TAGS ::=
+BEGIN
+
+    Foo ::= INTEGER
+    Foo-1 ::= BOOLEAN
+
+    P ::= CLASS {
+        &id    INTEGER (0..255) UNIQUE,
+        &Type
+    } WITH SYNTAX { &Type IDENTIFIED BY &id }
+
+    Objs P ::= {
+        { Foo IDENTIFIED BY 1 } |
+        { Foo IDENTIFIED BY 2 } |
+        { Foo-1 IDENTIFIED BY 3 }
+    }
+
+    T ::= SEQUENCE {
+        id     P.&id({Objs}),
+        value  P.&Type({Objs}{@id})
+    }
+
+END
